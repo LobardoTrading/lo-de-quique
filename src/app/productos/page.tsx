@@ -13,7 +13,7 @@ import { useToast } from '@/components/ui/toast'
 import { useDebounce } from '@/hooks/use-debounce'
 import { getProducts, getCategories, createProduct, updateProduct, deleteProduct, getProductByBarcode } from '@/lib/api'
 import { formatCurrency } from '@/lib/helpers'
-import { Plus, Search, Edit2, Trash2, Package, ScanBarcode, AlertTriangle, Filter } from 'lucide-react'
+import { Plus, Search, Edit2, Trash2, Package, ScanBarcode, AlertTriangle, Filter, LayoutGrid, List } from 'lucide-react'
 import { BarcodeScanner } from '@/components/barcode-scanner'
 import type { Product, Category } from '@/types/database'
 
@@ -48,6 +48,383 @@ const emptyForm: ProductForm = {
   min_stock: '0',
   unit: 'unidad',
   notes: '',
+}
+
+/* ── inline style helpers ── */
+const s = {
+  page: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 20,
+  },
+  toolbar: {
+    display: 'flex',
+    flexWrap: 'wrap' as const,
+    alignItems: 'center',
+    gap: 10,
+    padding: '14px 16px',
+    background: 'var(--bg-card)',
+    border: '1px solid var(--border)',
+    borderRadius: 'var(--radius)',
+  },
+  searchWrap: {
+    position: 'relative' as const,
+    flex: '1 1 220px',
+    minWidth: 180,
+  },
+  searchIcon: {
+    position: 'absolute' as const,
+    left: 12,
+    top: '50%',
+    transform: 'translateY(-50%)',
+    color: 'var(--text-muted)',
+    pointerEvents: 'none' as const,
+  },
+  searchInput: {
+    width: '100%',
+    padding: '10px 14px 10px 40px',
+    fontSize: 15,
+    background: 'var(--bg-input)',
+    color: 'var(--text-primary)',
+    border: '1px solid var(--border)',
+    borderRadius: 'var(--radius)',
+    outline: 'none',
+    transition: 'border-color .15s',
+  },
+  filterSelect: {
+    padding: '10px 14px',
+    fontSize: 14,
+    background: 'var(--bg-input)',
+    color: 'var(--text-primary)',
+    border: '1px solid var(--border)',
+    borderRadius: 'var(--radius)',
+    outline: 'none',
+    cursor: 'pointer',
+    minWidth: 160,
+  },
+  viewToggle: {
+    display: 'inline-flex',
+    borderRadius: 'var(--radius)',
+    overflow: 'hidden',
+    border: '1px solid var(--border)',
+  },
+  viewBtn: (active: boolean) => ({
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 38,
+    height: 38,
+    background: active ? 'var(--green)' : 'var(--bg-input)',
+    color: active ? '#fff' : 'var(--text-secondary)',
+    border: 'none',
+    cursor: 'pointer',
+    transition: 'background .15s, color .15s',
+  }),
+  newBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    padding: '10px 18px',
+    fontSize: 14,
+    fontWeight: 600,
+    background: 'var(--green)',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 'var(--radius)',
+    cursor: 'pointer',
+    transition: 'background .15s',
+    whiteSpace: 'nowrap' as const,
+  },
+  scanBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    padding: '10px 14px',
+    fontSize: 14,
+    fontWeight: 500,
+    background: 'var(--bg-card2)',
+    color: 'var(--text-secondary)',
+    border: '1px solid var(--border)',
+    borderRadius: 'var(--radius)',
+    cursor: 'pointer',
+    transition: 'background .15s',
+    whiteSpace: 'nowrap' as const,
+  },
+  pills: {
+    display: 'flex',
+    gap: 8,
+    overflowX: 'auto' as const,
+    paddingBottom: 2,
+  },
+  pill: (active: boolean, color?: string) => ({
+    flexShrink: 0,
+    padding: '7px 16px',
+    fontSize: 13,
+    fontWeight: 600,
+    borderRadius: 20,
+    border: active ? 'none' : '1px solid var(--border)',
+    background: active ? (color || 'var(--green)') : 'var(--bg-card)',
+    color: active ? '#fff' : 'var(--text-secondary)',
+    cursor: 'pointer',
+    transition: 'background .15s, color .15s',
+    whiteSpace: 'nowrap' as const,
+  }),
+  header: {
+    display: 'flex',
+    flexWrap: 'wrap' as const,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  title: {
+    fontSize: 26,
+    fontWeight: 700,
+    color: 'var(--text-primary)',
+    margin: 0,
+  },
+  subtitle: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 2,
+  },
+  count: {
+    fontSize: 15,
+    color: 'var(--text-secondary)',
+  },
+  /* ── grid card ── */
+  gridWrap: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+    gap: 14,
+  },
+  card: (isLow: boolean) => ({
+    background: 'var(--bg-card)',
+    border: `1px solid ${isLow ? 'var(--red)' : 'var(--border)'}`,
+    borderRadius: 'var(--radius)',
+    padding: 18,
+    transition: 'border-color .15s',
+  }),
+  cardTop: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  cardName: {
+    fontSize: 16,
+    fontWeight: 700,
+    color: 'var(--text-primary)',
+    margin: 0,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap' as const,
+  },
+  cardMeta: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 4,
+  },
+  catBadge: (color: string) => ({
+    display: 'inline-block',
+    padding: '2px 10px',
+    fontSize: 12,
+    fontWeight: 600,
+    borderRadius: 12,
+    background: color + '22',
+    color,
+  }),
+  barcode: {
+    fontSize: 11,
+    color: 'var(--text-muted)',
+    fontFamily: 'monospace',
+  },
+  actionBtn: (hoverColor: string) => ({
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 34,
+    height: 34,
+    background: 'transparent',
+    border: 'none',
+    borderRadius: 8,
+    color: hoverColor,
+    cursor: 'pointer',
+    transition: 'background .15s',
+  }),
+  metricsRow: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: 10,
+  },
+  metricBox: (bg: string, borderColor: string) => ({
+    background: bg,
+    border: `1px solid ${borderColor}`,
+    borderRadius: 'var(--radius)',
+    padding: '10px 12px',
+  }),
+  metricLabel: {
+    fontSize: 11,
+    color: 'var(--text-muted)',
+    fontWeight: 500,
+    margin: 0,
+  },
+  metricValue: (color: string) => ({
+    fontSize: 20,
+    fontWeight: 700,
+    color,
+    margin: '2px 0 0',
+  }),
+  metricUnit: {
+    fontSize: 13,
+    fontWeight: 400,
+  },
+  cardFooter: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 10,
+    fontSize: 13,
+  },
+  costText: {
+    color: 'var(--text-muted)',
+  },
+  marginGood: { color: 'var(--green)', fontWeight: 600, marginLeft: 4 },
+  marginOk: { color: 'var(--orange)', fontWeight: 600, marginLeft: 4 },
+  marginBad: { color: 'var(--red)', fontWeight: 600, marginLeft: 4 },
+  /* ── list view ── */
+  table: {
+    width: '100%',
+    borderCollapse: 'collapse' as const,
+    background: 'var(--bg-card)',
+    borderRadius: 'var(--radius)',
+    overflow: 'hidden',
+    border: '1px solid var(--border)',
+  },
+  th: {
+    textAlign: 'left' as const,
+    padding: '10px 14px',
+    fontSize: 12,
+    fontWeight: 600,
+    color: 'var(--text-muted)',
+    borderBottom: '1px solid var(--border)',
+    background: 'var(--bg-card2)',
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.5,
+  },
+  td: {
+    padding: '12px 14px',
+    fontSize: 14,
+    color: 'var(--text-primary)',
+    borderBottom: '1px solid var(--border)',
+  },
+  trHover: {
+    transition: 'background .1s',
+    cursor: 'default',
+  },
+  /* ── form modal ── */
+  formGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: 14,
+  },
+  formCol: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 14,
+  },
+  formLabel: {
+    display: 'block',
+    fontSize: 14,
+    fontWeight: 500,
+    color: 'var(--text-secondary)',
+    marginBottom: 6,
+  },
+  formInput: {
+    width: '100%',
+    padding: '10px 14px',
+    fontSize: 15,
+    background: 'var(--bg-input)',
+    color: 'var(--text-primary)',
+    border: '1px solid var(--border)',
+    borderRadius: 'var(--radius)',
+    outline: 'none',
+    transition: 'border-color .15s',
+  },
+  formActions: {
+    display: 'flex',
+    gap: 10,
+    paddingTop: 14,
+  },
+  btnCancel: {
+    flex: 1,
+    padding: '12px 0',
+    fontSize: 15,
+    fontWeight: 600,
+    background: 'var(--bg-card2)',
+    color: 'var(--text-secondary)',
+    border: '1px solid var(--border)',
+    borderRadius: 'var(--radius)',
+    cursor: 'pointer',
+  },
+  btnSave: {
+    flex: 1,
+    padding: '12px 0',
+    fontSize: 15,
+    fontWeight: 600,
+    background: 'var(--green)',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 'var(--radius)',
+    cursor: 'pointer',
+  },
+  barcodeRow: {
+    display: 'flex',
+    gap: 8,
+  },
+  barcodeScanBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '0 14px',
+    background: 'var(--green-dim)',
+    color: 'var(--green)',
+    border: '1px solid var(--green)',
+    borderRadius: 'var(--radius)',
+    cursor: 'pointer',
+    transition: 'background .15s',
+  },
+  lowStockBadge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 4,
+    padding: '2px 8px',
+    fontSize: 12,
+    fontWeight: 600,
+    borderRadius: 12,
+    background: 'rgba(224,80,80,0.15)',
+    color: 'var(--red)',
+  },
+  skeleton: {
+    height: 10,
+    width: 180,
+    background: 'var(--bg-card2)',
+    borderRadius: 'var(--radius)',
+    animation: 'pulse-bar 1.2s infinite',
+  },
+  skeletonGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+    gap: 14,
+  },
+  skeletonCard: {
+    height: 180,
+    background: 'var(--bg-card)',
+    border: '1px solid var(--border)',
+    borderRadius: 'var(--radius)',
+    animation: 'pulse-bar 1.2s infinite',
+  },
 }
 
 export default function ProductosPage() {
@@ -195,77 +572,262 @@ export default function ProductosPage() {
   const lowStockCount = products.filter(p => p.stock <= p.min_stock).length
   const margin = (p: Product) => p.price_cost > 0 ? Math.round(((p.price_sell - p.price_cost) / p.price_cost) * 100) : null
 
+  /* ── loading skeleton ── */
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div className="h-10 w-48 bg-gray-200 rounded-xl animate-pulse" />
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)}
+      <div style={s.page}>
+        <div style={s.skeleton} />
+        <div style={s.skeletonGrid}>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} style={s.skeletonCard} />
+          ))}
         </div>
       </div>
     )
   }
 
+  /* ── margin style helper ── */
+  function marginStyle(m: number | null) {
+    if (m === null) return undefined
+    if (m >= 30) return s.marginGood
+    if (m >= 15) return s.marginOk
+    return s.marginBad
+  }
+
+  /* ── render grid card ── */
+  function renderGridCard(product: Product) {
+    const isLowStock = product.stock <= product.min_stock
+    const m = margin(product)
+    return (
+      <div key={product.id} style={s.card(isLowStock)}>
+        <div style={s.cardTop}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={s.cardName}>{product.name}</p>
+            <div style={s.cardMeta}>
+              {product.category && (
+                <span style={s.catBadge(product.category.color)}>{product.category.name}</span>
+              )}
+              {product.barcode && (
+                <span style={s.barcode}>{product.barcode}</span>
+              )}
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 2, marginLeft: 8, flexShrink: 0 }}>
+            <button
+              onClick={() => openEdit(product)}
+              style={s.actionBtn('var(--green)')}
+              title="Editar"
+              onMouseEnter={e => (e.currentTarget.style.background = 'var(--green-dim)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+            >
+              <Edit2 size={17} />
+            </button>
+            <button
+              onClick={() => setDeleteTarget(product)}
+              style={s.actionBtn('var(--red)')}
+              title="Desactivar"
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(224,80,80,0.12)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+            >
+              <Trash2 size={17} />
+            </button>
+          </div>
+        </div>
+
+        <div style={s.metricsRow}>
+          <div style={s.metricBox('var(--green-dim)', 'rgba(62,201,108,0.25)')}>
+            <p style={s.metricLabel}>Precio venta</p>
+            <p style={s.metricValue('var(--green)')}>{formatCurrency(product.price_sell)}</p>
+          </div>
+          <div style={s.metricBox(
+            isLowStock ? 'rgba(224,80,80,0.12)' : 'rgba(59,158,255,0.1)',
+            isLowStock ? 'rgba(224,80,80,0.3)' : 'rgba(59,158,255,0.2)',
+          )}>
+            <p style={s.metricLabel}>Stock</p>
+            <p style={s.metricValue(isLowStock ? 'var(--red)' : 'var(--blue)')}>
+              {product.stock} <span style={s.metricUnit}>{product.unit}</span>
+            </p>
+          </div>
+        </div>
+
+        {(product.price_cost > 0 || isLowStock) && (
+          <div style={s.cardFooter}>
+            {product.price_cost > 0 ? (
+              <span style={s.costText}>
+                Costo: {formatCurrency(product.price_cost)}
+                {m !== null && <span style={marginStyle(m)}>({m}%)</span>}
+              </span>
+            ) : <span />}
+            {isLowStock && (
+              <span style={s.lowStockBadge}>
+                <AlertTriangle size={12} /> Stock bajo
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  /* ── render list row ── */
+  function renderListRow(product: Product) {
+    const isLowStock = product.stock <= product.min_stock
+    const m = margin(product)
+    return (
+      <tr
+        key={product.id}
+        style={s.trHover}
+        onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-card2)')}
+        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+      >
+        <td style={s.td}>
+          <div style={{ fontWeight: 600 }}>{product.name}</div>
+          {product.barcode && <div style={{ ...s.barcode, marginTop: 2 }}>{product.barcode}</div>}
+        </td>
+        <td style={s.td}>
+          {product.category ? (
+            <span style={s.catBadge(product.category.color)}>{product.category.name}</span>
+          ) : (
+            <span style={{ color: 'var(--text-muted)' }}>--</span>
+          )}
+        </td>
+        <td style={{ ...s.td, fontWeight: 700, color: 'var(--green)' }}>
+          {formatCurrency(product.price_sell)}
+        </td>
+        <td style={s.td}>
+          {product.price_cost > 0 ? (
+            <span style={{ color: 'var(--text-secondary)' }}>
+              {formatCurrency(product.price_cost)}
+              {m !== null && <span style={marginStyle(m)}> ({m}%)</span>}
+            </span>
+          ) : (
+            <span style={{ color: 'var(--text-muted)' }}>--</span>
+          )}
+        </td>
+        <td style={{ ...s.td, color: isLowStock ? 'var(--red)' : 'var(--text-primary)', fontWeight: isLowStock ? 700 : 400 }}>
+          {product.stock} {product.unit}
+          {isLowStock && (
+            <span style={{ ...s.lowStockBadge, marginLeft: 6 }}>
+              <AlertTriangle size={11} /> Bajo
+            </span>
+          )}
+        </td>
+        <td style={{ ...s.td, whiteSpace: 'nowrap' }}>
+          <div style={{ display: 'flex', gap: 2 }}>
+            <button
+              onClick={() => openEdit(product)}
+              style={s.actionBtn('var(--green)')}
+              title="Editar"
+              onMouseEnter={e => (e.currentTarget.style.background = 'var(--green-dim)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+            >
+              <Edit2 size={16} />
+            </button>
+            <button
+              onClick={() => setDeleteTarget(product)}
+              style={s.actionBtn('var(--red)')}
+              title="Desactivar"
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(224,80,80,0.12)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+            >
+              <Trash2 size={16} />
+            </button>
+          </div>
+        </td>
+      </tr>
+    )
+  }
+
+  /* ── main render ── */
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div style={s.page}>
+      {/* Header */}
+      <div style={s.header}>
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Productos</h1>
-          <div className="flex items-center gap-3 mt-1">
-            <span className="text-lg text-gray-500">{products.length} productos</span>
+          <h1 style={s.title}>Productos</h1>
+          <div style={s.subtitle}>
+            <span style={s.count}>{products.length} productos</span>
             {lowStockCount > 0 && (
-              <Badge color="red">
-                <AlertTriangle size={14} />
-                {lowStockCount} stock bajo
-              </Badge>
+              <span style={s.lowStockBadge}>
+                <AlertTriangle size={13} /> {lowStockCount} stock bajo
+              </span>
             )}
           </div>
         </div>
-        <div className="flex gap-3">
-          <Button size="lg" variant="secondary" onClick={() => { setScanMode('search'); setShowScanner(true) }}>
-            <ScanBarcode size={22} />
-            Escanear
-          </Button>
-          <Button size="lg" onClick={openNew}>
-            <Plus size={22} />
-            Nuevo
-          </Button>
-        </div>
       </div>
 
-      {/* Filters */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="flex-1 relative">
-              <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Buscar producto..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 text-lg rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:outline-none transition-colors"
-              />
-            </div>
-            <Select
-              options={[
-                { value: '', label: 'Todas las categorias' },
-                ...categories.map((c) => ({ value: c.id, label: c.name })),
-              ]}
-              value={filterCategory}
-              onChange={(e) => setFilterCategory(e.target.value)}
-            />
-          </div>
-        </CardContent>
-      </Card>
+      {/* Toolbar */}
+      <div style={s.toolbar}>
+        {/* Search */}
+        <div style={s.searchWrap}>
+          <Search size={18} style={s.searchIcon} />
+          <input
+            type="text"
+            placeholder="Buscar producto..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={s.searchInput}
+            onFocus={e => (e.currentTarget.style.borderColor = 'var(--green)')}
+            onBlur={e => (e.currentTarget.style.borderColor = 'var(--border)')}
+          />
+        </div>
+
+        {/* Category filter */}
+        <select
+          value={filterCategory}
+          onChange={(e) => setFilterCategory(e.target.value)}
+          style={s.filterSelect}
+        >
+          <option value="">Todas las categorias</option>
+          {categories.map((c) => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
+        </select>
+
+        {/* View toggle */}
+        <div style={s.viewToggle}>
+          <button
+            style={s.viewBtn(viewMode === 'grid')}
+            onClick={() => setViewMode('grid')}
+            title="Vista grilla"
+          >
+            <LayoutGrid size={18} />
+          </button>
+          <button
+            style={s.viewBtn(viewMode === 'list')}
+            onClick={() => setViewMode('list')}
+            title="Vista lista"
+          >
+            <List size={18} />
+          </button>
+        </div>
+
+        {/* Scan */}
+        <button
+          style={s.scanBtn}
+          onClick={() => { setScanMode('search'); setShowScanner(true) }}
+          onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-input)')}
+          onMouseLeave={e => (e.currentTarget.style.background = 'var(--bg-card2)')}
+        >
+          <ScanBarcode size={18} /> Escanear
+        </button>
+
+        {/* New product */}
+        <button
+          style={s.newBtn}
+          onClick={openNew}
+          onMouseEnter={e => (e.currentTarget.style.background = 'var(--green-dark)')}
+          onMouseLeave={e => (e.currentTarget.style.background = 'var(--green)')}
+        >
+          <Plus size={18} /> Nuevo Producto
+        </button>
+      </div>
 
       {/* Category pills */}
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      <div style={s.pills}>
         <button
           onClick={() => setFilterCategory('')}
-          className={`shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-colors ${
-            filterCategory === '' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
-          }`}
+          style={s.pill(filterCategory === '')}
         >
           Todos ({products.length})
         </button>
@@ -273,97 +835,46 @@ export default function ProductosPage() {
           <button
             key={cat.id}
             onClick={() => setFilterCategory(filterCategory === cat.id ? '' : cat.id)}
-            className={`shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-colors ${
-              filterCategory === cat.id
-                ? 'text-white'
-                : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
-            }`}
-            style={filterCategory === cat.id ? { backgroundColor: cat.color } : undefined}
+            style={s.pill(filterCategory === cat.id, cat.color)}
           >
             {cat.name}
           </button>
         ))}
       </div>
 
-      {/* Product list */}
+      {/* Product list / grid */}
       {products.length === 0 ? (
         <EmptyState
-          icon={<Package size={36} className="text-gray-400" />}
+          icon={<Package size={36} style={{ color: 'var(--text-muted)' }} />}
           title="Sin productos"
           description={search ? 'No se encontraron productos con esa busqueda' : 'Agrega tu primer producto para empezar'}
-          action={!search ? <Button onClick={openNew}><Plus size={20} /> Nuevo Producto</Button> : undefined}
+          action={!search ? (
+            <button style={s.newBtn} onClick={openNew}>
+              <Plus size={18} /> Nuevo Producto
+            </button>
+          ) : undefined}
         />
+      ) : viewMode === 'grid' ? (
+        <div style={s.gridWrap}>
+          {products.map(renderGridCard)}
+        </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {products.map((product) => {
-            const isLowStock = product.stock <= product.min_stock
-            const m = margin(product)
-            return (
-              <Card key={product.id} className={`hover:shadow-md transition-all ${isLowStock ? 'border-red-200' : ''}`}>
-                <CardContent className="p-5">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-bold text-gray-900 truncate">{product.name}</h3>
-                      <div className="flex items-center gap-2 mt-1.5">
-                        {product.category && (
-                          <Badge color={product.category.color}>{product.category.name}</Badge>
-                        )}
-                        {product.barcode && (
-                          <span className="text-xs text-gray-400 font-mono">{product.barcode}</span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex gap-1 ml-2 shrink-0">
-                      <button
-                        onClick={() => openEdit(product)}
-                        className="p-2 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors"
-                        title="Editar"
-                      >
-                        <Edit2 size={18} />
-                      </button>
-                      <button
-                        onClick={() => setDeleteTarget(product)}
-                        className="p-2 rounded-lg hover:bg-red-50 text-red-400 transition-colors"
-                        title="Desactivar"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-green-50 rounded-xl p-3 border border-green-100">
-                      <p className="text-xs text-gray-500 font-medium">Precio venta</p>
-                      <p className="text-xl font-bold text-green-700">{formatCurrency(product.price_sell)}</p>
-                    </div>
-                    <div className={`rounded-xl p-3 border ${isLowStock ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-100'}`}>
-                      <p className="text-xs text-gray-500 font-medium">Stock</p>
-                      <p className={`text-xl font-bold ${isLowStock ? 'text-red-600' : 'text-blue-700'}`}>
-                        {product.stock} <span className="text-sm font-normal">{product.unit}</span>
-                      </p>
-                    </div>
-                  </div>
-
-                  {(product.price_cost > 0 || isLowStock) && (
-                    <div className="flex items-center justify-between mt-3 text-sm">
-                      {product.price_cost > 0 ? (
-                        <span className="text-gray-400">
-                          Costo: {formatCurrency(product.price_cost)}
-                          {m !== null && <span className={`ml-1 font-semibold ${m >= 30 ? 'text-green-600' : m >= 15 ? 'text-yellow-600' : 'text-red-500'}`}>({m}%)</span>}
-                        </span>
-                      ) : <span />}
-                      {isLowStock && (
-                        <Badge color="red">
-                          <AlertTriangle size={12} />
-                          Stock bajo
-                        </Badge>
-                      )}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )
-          })}
+        <div style={{ overflowX: 'auto', borderRadius: 'var(--radius)' }}>
+          <table style={s.table}>
+            <thead>
+              <tr>
+                <th style={s.th}>Producto</th>
+                <th style={s.th}>Categoria</th>
+                <th style={s.th}>Precio venta</th>
+                <th style={s.th}>Costo</th>
+                <th style={s.th}>Stock</th>
+                <th style={{ ...s.th, width: 90 }}>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {products.map(renderListRow)}
+            </tbody>
+          </table>
         </div>
       )}
 
@@ -385,58 +896,84 @@ export default function ProductosPage() {
         title={editingProduct ? 'Editar Producto' : 'Nuevo Producto'}
         size="lg"
       >
-        <div className="space-y-5">
-          <Input
-            label="Nombre del producto"
-            placeholder="Ej: Jamon crudo"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-            autoFocus
-          />
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Select
-              label="Categoria"
-              options={[
-                { value: '', label: 'Sin categoria' },
-                ...categories.map((c) => ({ value: c.id, label: c.name })),
-              ]}
-              value={form.category_id}
-              onChange={(e) => setForm({ ...form, category_id: e.target.value })}
-            />
-            <Select
-              label="Unidad de medida"
-              options={UNITS}
-              value={form.unit}
-              onChange={(e) => setForm({ ...form, unit: e.target.value })}
+        <div style={s.formCol}>
+          {/* Name */}
+          <div>
+            <label style={s.formLabel}>Nombre del producto</label>
+            <input
+              style={s.formInput}
+              placeholder="Ej: Jamon crudo"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              autoFocus
+              onFocus={e => (e.currentTarget.style.borderColor = 'var(--green)')}
+              onBlur={e => (e.currentTarget.style.borderColor = 'var(--border)')}
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input
-              label="Precio de costo"
-              type="number"
-              min="0"
-              step="0.01"
-              placeholder="0"
-              value={form.price_cost}
-              onChange={(e) => setForm({ ...form, price_cost: e.target.value })}
-            />
+          {/* Category + Unit */}
+          <div style={s.formGrid}>
             <div>
-              <Input
-                label="Precio de venta"
+              <label style={s.formLabel}>Categoria</label>
+              <select
+                style={{ ...s.formInput, cursor: 'pointer' }}
+                value={form.category_id}
+                onChange={(e) => setForm({ ...form, category_id: e.target.value })}
+              >
+                <option value="">Sin categoria</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label style={s.formLabel}>Unidad de medida</label>
+              <select
+                style={{ ...s.formInput, cursor: 'pointer' }}
+                value={form.unit}
+                onChange={(e) => setForm({ ...form, unit: e.target.value })}
+              >
+                {UNITS.map(u => (
+                  <option key={u.value} value={u.value}>{u.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Cost + Sell */}
+          <div style={s.formGrid}>
+            <div>
+              <label style={s.formLabel}>Precio de costo</label>
+              <input
+                style={s.formInput}
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0"
+                value={form.price_cost}
+                onChange={(e) => setForm({ ...form, price_cost: e.target.value })}
+                onFocus={e => (e.currentTarget.style.borderColor = 'var(--green)')}
+                onBlur={e => (e.currentTarget.style.borderColor = 'var(--border)')}
+              />
+            </div>
+            <div>
+              <label style={s.formLabel}>Precio de venta</label>
+              <input
+                style={s.formInput}
                 type="number"
                 min="0"
                 step="0.01"
                 placeholder="0"
                 value={form.price_sell}
                 onChange={(e) => setForm({ ...form, price_sell: e.target.value })}
+                onFocus={e => (e.currentTarget.style.borderColor = 'var(--green)')}
+                onBlur={e => (e.currentTarget.style.borderColor = 'var(--border)')}
               />
               {form.price_cost && form.price_sell && Number(form.price_cost) > 0 && (
-                <p className="text-sm mt-1">
-                  Margen: <span className={`font-semibold ${
-                    ((Number(form.price_sell) - Number(form.price_cost)) / Number(form.price_cost) * 100) >= 30 ? 'text-green-600' : 'text-yellow-600'
-                  }`}>
+                <p style={{ fontSize: 13, marginTop: 4, color: 'var(--text-secondary)' }}>
+                  Margen: <span style={marginStyle(
+                    Math.round((Number(form.price_sell) - Number(form.price_cost)) / Number(form.price_cost) * 100)
+                  )}>
                     {Math.round((Number(form.price_sell) - Number(form.price_cost)) / Number(form.price_cost) * 100)}%
                   </span>
                 </p>
@@ -444,70 +981,92 @@ export default function ProductosPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input
-              label="Stock actual"
-              type="number"
-              min="0"
-              step="0.001"
-              value={form.stock}
-              onChange={(e) => setForm({ ...form, stock: e.target.value })}
-            />
-            <Input
-              label="Stock minimo (alerta)"
-              type="number"
-              min="0"
-              step="0.001"
-              value={form.min_stock}
-              onChange={(e) => setForm({ ...form, min_stock: e.target.value })}
-            />
+          {/* Stock + Min stock */}
+          <div style={s.formGrid}>
+            <div>
+              <label style={s.formLabel}>Stock actual</label>
+              <input
+                style={s.formInput}
+                type="number"
+                min="0"
+                step="0.001"
+                value={form.stock}
+                onChange={(e) => setForm({ ...form, stock: e.target.value })}
+                onFocus={e => (e.currentTarget.style.borderColor = 'var(--green)')}
+                onBlur={e => (e.currentTarget.style.borderColor = 'var(--border)')}
+              />
+            </div>
+            <div>
+              <label style={s.formLabel}>Stock minimo (alerta)</label>
+              <input
+                style={s.formInput}
+                type="number"
+                min="0"
+                step="0.001"
+                value={form.min_stock}
+                onChange={(e) => setForm({ ...form, min_stock: e.target.value })}
+                onFocus={e => (e.currentTarget.style.borderColor = 'var(--green)')}
+                onBlur={e => (e.currentTarget.style.borderColor = 'var(--border)')}
+              />
+            </div>
           </div>
 
+          {/* Barcode */}
           <div>
-            <label className="block text-base font-medium text-gray-700 mb-2">Codigo de barras (opcional)</label>
-            <div className="flex gap-2">
+            <label style={s.formLabel}>Codigo de barras (opcional)</label>
+            <div style={s.barcodeRow}>
               <input
+                style={{ ...s.formInput, flex: 1 }}
                 type="text"
                 placeholder="7790001234567"
                 value={form.barcode}
                 onChange={(e) => setForm({ ...form, barcode: e.target.value })}
-                className="flex-1 px-4 py-3 text-lg rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:outline-none"
+                onFocus={e => (e.currentTarget.style.borderColor = 'var(--green)')}
+                onBlur={e => (e.currentTarget.style.borderColor = 'var(--border)')}
               />
               <button
                 type="button"
                 onClick={() => { setScanMode('form'); setShowScanner(true) }}
-                className="px-4 py-3 bg-blue-50 text-blue-600 rounded-xl border-2 border-blue-200 hover:bg-blue-100 transition-colors"
+                style={s.barcodeScanBtn}
                 title="Escanear codigo"
               >
-                <ScanBarcode size={24} />
+                <ScanBarcode size={22} />
               </button>
             </div>
           </div>
 
-          <Input
-            label="Notas (opcional)"
-            placeholder="Observaciones..."
-            value={form.notes}
-            onChange={(e) => setForm({ ...form, notes: e.target.value })}
-          />
+          {/* Notes */}
+          <div>
+            <label style={s.formLabel}>Notas (opcional)</label>
+            <input
+              style={s.formInput}
+              placeholder="Observaciones..."
+              value={form.notes}
+              onChange={(e) => setForm({ ...form, notes: e.target.value })}
+              onFocus={e => (e.currentTarget.style.borderColor = 'var(--green)')}
+              onBlur={e => (e.currentTarget.style.borderColor = 'var(--border)')}
+            />
+          </div>
 
-          <div className="flex gap-3 pt-4">
-            <Button
-              variant="secondary"
-              size="lg"
-              className="flex-1"
+          {/* Actions */}
+          <div style={s.formActions}>
+            <button
+              style={s.btnCancel}
               onClick={() => setModalOpen(false)}
             >
               Cancelar
-            </Button>
-            <Button
-              size="lg"
-              className="flex-1"
+            </button>
+            <button
+              style={{
+                ...s.btnSave,
+                opacity: saving ? 0.6 : 1,
+                cursor: saving ? 'not-allowed' : 'pointer',
+              }}
               onClick={handleSave}
               disabled={saving}
             >
               {saving ? 'Guardando...' : editingProduct ? 'Guardar cambios' : 'Crear producto'}
-            </Button>
+            </button>
           </div>
         </div>
       </Modal>

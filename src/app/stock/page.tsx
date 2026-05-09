@@ -110,7 +110,7 @@ export default function StockPage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="h-10 w-48 bg-gray-200 rounded-xl animate-pulse" />
+        <div className="h-10 w-48 rounded-[10px] animate-pulse" style={{ background: '#252525' }} />
         <ListSkeleton rows={6} />
       </div>
     )
@@ -120,9 +120,9 @@ export default function StockPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Stock</h1>
+          <h1 className="text-3xl font-bold" style={{ color: '#f0f0f0' }}>Stock</h1>
           <div className="flex items-center gap-3 mt-1">
-            <span className="text-lg text-gray-500">Gestion de inventario</span>
+            <span className="text-lg" style={{ color: '#999' }}>Gestion de inventario</span>
             {lowStockCount > 0 && (
               <Badge color="red">
                 <AlertTriangle size={14} />
@@ -131,45 +131,59 @@ export default function StockPage() {
             )}
           </div>
         </div>
-        <Button variant="secondary" size="lg" onClick={openMovements}>
+        <button
+          onClick={openMovements}
+          className="flex items-center gap-2 px-5 py-3 rounded-[10px] font-semibold text-base transition-colors"
+          style={{
+            background: '#1e1e1e',
+            border: '1px solid #333',
+            color: '#f0f0f0',
+          }}
+        >
           <History size={22} />
           Movimientos
-        </Button>
+        </button>
       </div>
 
       {/* Search + filters */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="flex-1 relative">
-              <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Buscar producto..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 text-lg rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:outline-none transition-colors"
-              />
-            </div>
-            <button
-              onClick={() => setFilterLowStock(!filterLowStock)}
-              className={`flex items-center justify-center gap-2 px-5 py-3 rounded-xl border-2 font-semibold transition-colors ${
-                filterLowStock
-                  ? 'border-red-300 bg-red-50 text-red-700'
-                  : 'border-gray-200 text-gray-500 hover:border-gray-300'
-              }`}
-            >
-              <AlertTriangle size={18} />
-              Solo stock bajo
-            </button>
+      <div className="rounded-[10px] p-4" style={{ background: '#1e1e1e', border: '1px solid #333' }}>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex-1 relative">
+            <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: '#666' }} />
+            <input
+              type="text"
+              placeholder="Buscar producto..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-12 pr-4 py-3 text-lg rounded-[10px] transition-colors outline-none"
+              style={{
+                background: '#2a2a2a',
+                border: '2px solid #333',
+                color: '#f0f0f0',
+              }}
+              onFocus={(e) => (e.currentTarget.style.borderColor = '#3ec96c')}
+              onBlur={(e) => (e.currentTarget.style.borderColor = '#333')}
+            />
           </div>
-        </CardContent>
-      </Card>
+          <button
+            onClick={() => setFilterLowStock(!filterLowStock)}
+            className="flex items-center justify-center gap-2 px-5 py-3 rounded-[10px] font-semibold transition-colors"
+            style={{
+              border: filterLowStock ? '2px solid #e05050' : '2px solid #333',
+              background: filterLowStock ? 'rgba(224,80,80,0.15)' : 'transparent',
+              color: filterLowStock ? '#e05050' : '#999',
+            }}
+          >
+            <AlertTriangle size={18} />
+            Solo stock bajo
+          </button>
+        </div>
+      </div>
 
       {/* Product stock list */}
       {filteredProducts.length === 0 ? (
         <EmptyState
-          icon={<Package size={36} className="text-gray-400" />}
+          icon={<Package size={36} style={{ color: '#666' }} />}
           title={filterLowStock ? 'Todo bien' : 'Sin productos'}
           description={filterLowStock ? 'No hay productos con stock bajo' : 'No se encontraron productos'}
         />
@@ -179,63 +193,81 @@ export default function StockPage() {
             const isLow = product.stock <= product.min_stock
             const pct = product.min_stock > 0 ? Math.min((product.stock / (product.min_stock * 3)) * 100, 100) : 100
             return (
-              <Card key={product.id} className={isLow ? 'border-red-200' : ''}>
-                <CardContent className="p-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-lg font-bold text-gray-900 truncate">{product.name}</h3>
-                        {isLow && <AlertTriangle size={18} className="text-red-500 shrink-0" />}
-                      </div>
-                      <div className="flex items-center gap-3 mt-1">
-                        {product.category && (
-                          <Badge color={product.category.color}>{product.category.name}</Badge>
-                        )}
-                        <span className="text-sm text-gray-400">Min: {product.min_stock} {product.unit}</span>
-                      </div>
-                      {/* Stock bar */}
-                      <div className="mt-3 h-2 bg-gray-100 rounded-full overflow-hidden max-w-xs">
-                        <div
-                          className={`h-full rounded-full transition-all ${
-                            isLow ? 'bg-red-500' : pct > 60 ? 'bg-green-500' : 'bg-yellow-500'
-                          }`}
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
+              <div
+                key={product.id}
+                className="rounded-[10px] p-4"
+                style={{
+                  background: '#1e1e1e',
+                  border: isLow ? '1px solid #e05050' : '1px solid #333',
+                }}
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-lg font-bold truncate" style={{ color: '#f0f0f0' }}>{product.name}</h3>
+                      {isLow && <AlertTriangle size={18} className="shrink-0" style={{ color: '#e05050' }} />}
                     </div>
-
-                    <div className="flex items-center gap-4">
-                      <div className={`px-5 py-3 rounded-xl text-center min-w-[110px] border-2 ${
-                        isLow ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'
-                      }`}>
-                        <p className={`text-3xl font-bold ${isLow ? 'text-red-600' : 'text-green-600'}`}>
-                          {product.stock}
-                        </p>
-                        <p className="text-xs text-gray-500 font-medium">{product.unit}</p>
-                      </div>
-
-                      <div className="flex flex-col gap-2">
-                        <Button
-                          size="sm"
-                          variant="success"
-                          onClick={() => openStockModal(product, 'ingreso')}
-                        >
-                          <PackagePlus size={18} />
-                          Ingresar
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => openStockModal(product, 'ajuste')}
-                        >
-                          <SlidersHorizontal size={18} />
-                          Ajustar
-                        </Button>
-                      </div>
+                    <div className="flex items-center gap-3 mt-1">
+                      {product.category && (
+                        <Badge color={product.category.color}>{product.category.name}</Badge>
+                      )}
+                      <span className="text-sm" style={{ color: '#666' }}>Min: {product.min_stock} {product.unit}</span>
+                    </div>
+                    {/* Stock bar */}
+                    <div className="mt-3 h-2 rounded-full overflow-hidden max-w-xs" style={{ background: '#252525' }}>
+                      <div
+                        className="h-full rounded-full transition-all"
+                        style={{
+                          width: `${pct}%`,
+                          background: isLow ? '#e05050' : pct > 60 ? '#3ec96c' : '#e0a030',
+                        }}
+                      />
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+
+                  <div className="flex items-center gap-4">
+                    <div
+                      className="px-5 py-3 rounded-[10px] text-center min-w-[110px]"
+                      style={{
+                        background: isLow ? 'rgba(224,80,80,0.15)' : 'rgba(62,201,108,0.15)',
+                        border: isLow ? '2px solid rgba(224,80,80,0.3)' : '2px solid rgba(62,201,108,0.3)',
+                      }}
+                    >
+                      <p className="text-3xl font-bold" style={{ color: isLow ? '#e05050' : '#3ec96c' }}>
+                        {product.stock}
+                      </p>
+                      <p className="text-xs font-medium" style={{ color: '#999' }}>{product.unit}</p>
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                      <button
+                        className="flex items-center gap-2 px-4 py-2 rounded-[10px] text-sm font-semibold transition-colors"
+                        style={{
+                          background: 'rgba(62,201,108,0.15)',
+                          color: '#3ec96c',
+                          border: '1px solid rgba(62,201,108,0.3)',
+                        }}
+                        onClick={() => openStockModal(product, 'ingreso')}
+                      >
+                        <PackagePlus size={18} />
+                        Ingresar
+                      </button>
+                      <button
+                        className="flex items-center gap-2 px-4 py-2 rounded-[10px] text-sm font-semibold transition-colors"
+                        style={{
+                          background: '#252525',
+                          color: '#999',
+                          border: '1px solid #333',
+                        }}
+                        onClick={() => openStockModal(product, 'ajuste')}
+                      >
+                        <SlidersHorizontal size={18} />
+                        Ajustar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             )
           })}
         </div>
@@ -249,10 +281,10 @@ export default function StockPage() {
       >
         {selectedProduct && (
           <div className="space-y-5">
-            <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-              <p className="font-bold text-lg text-gray-900">{selectedProduct.name}</p>
-              <p className="text-gray-500 mt-1">
-                Stock actual: <span className="font-bold text-xl">{selectedProduct.stock}</span> {selectedProduct.unit}
+            <div className="rounded-[10px] p-4" style={{ background: '#252525', border: '1px solid #333' }}>
+              <p className="font-bold text-lg" style={{ color: '#f0f0f0' }}>{selectedProduct.name}</p>
+              <p className="mt-1" style={{ color: '#999' }}>
+                Stock actual: <span className="font-bold text-xl" style={{ color: '#f0f0f0' }}>{selectedProduct.stock}</span> {selectedProduct.unit}
               </p>
             </div>
 
@@ -268,20 +300,20 @@ export default function StockPage() {
             />
 
             {movType === 'ingreso' && quantity && Number(quantity) > 0 && (
-              <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-center">
-                <p className="text-sm text-gray-600">Stock resultante</p>
-                <p className="text-2xl font-bold text-green-600">
+              <div className="rounded-[10px] p-3 text-center" style={{ background: 'rgba(62,201,108,0.15)', border: '1px solid rgba(62,201,108,0.3)' }}>
+                <p className="text-sm" style={{ color: '#999' }}>Stock resultante</p>
+                <p className="text-2xl font-bold" style={{ color: '#3ec96c' }}>
                   {selectedProduct.stock + Number(quantity)} {selectedProduct.unit}
                 </p>
               </div>
             )}
 
             {movType === 'ajuste' && quantity !== '' && (
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-center">
-                <p className="text-sm text-gray-600">
+              <div className="rounded-[10px] p-3 text-center" style={{ background: 'rgba(80,130,224,0.15)', border: '1px solid rgba(80,130,224,0.3)' }}>
+                <p className="text-sm" style={{ color: '#999' }}>
                   {Number(quantity) > selectedProduct.stock ? 'Se agrega' : 'Se resta'}
                 </p>
-                <p className="text-2xl font-bold text-blue-600">
+                <p className="text-2xl font-bold" style={{ color: '#5082e0' }}>
                   {Number(quantity) > selectedProduct.stock ? '+' : ''}{Number(quantity) - selectedProduct.stock} {selectedProduct.unit}
                 </p>
               </div>
@@ -295,18 +327,25 @@ export default function StockPage() {
             />
 
             <div className="flex gap-3 pt-4">
-              <Button variant="secondary" size="lg" className="flex-1" onClick={() => setModalOpen(false)}>
+              <button
+                className="flex-1 px-5 py-3 rounded-[10px] font-semibold text-base transition-colors"
+                style={{ background: '#252525', border: '1px solid #333', color: '#999' }}
+                onClick={() => setModalOpen(false)}
+              >
                 Cancelar
-              </Button>
-              <Button
-                size="lg"
-                className="flex-1"
-                variant={movType === 'ingreso' ? 'success' : 'primary'}
+              </button>
+              <button
+                className="flex-1 px-5 py-3 rounded-[10px] font-semibold text-base transition-colors disabled:opacity-50"
+                style={{
+                  background: movType === 'ingreso' ? '#3ec96c' : '#5082e0',
+                  border: 'none',
+                  color: '#121212',
+                }}
                 onClick={handleSaveStock}
                 disabled={saving}
               >
                 {saving ? 'Guardando...' : movType === 'ingreso' ? 'Registrar ingreso' : 'Ajustar stock'}
-              </Button>
+              </button>
             </div>
           </div>
         )}
@@ -315,43 +354,55 @@ export default function StockPage() {
       {/* Movements History */}
       {showMovements && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-black/40" onClick={() => setShowMovements(false)} />
-          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[85vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white rounded-t-2xl border-b border-gray-100 px-6 py-4 flex items-center justify-between z-10">
+          <div className="fixed inset-0 bg-black/60" onClick={() => setShowMovements(false)} />
+          <div className="relative rounded-2xl shadow-xl w-full max-w-2xl max-h-[85vh] overflow-y-auto" style={{ background: '#1e1e1e' }}>
+            <div className="sticky top-0 rounded-t-2xl px-6 py-4 flex items-center justify-between z-10" style={{ background: '#1e1e1e', borderBottom: '1px solid #333' }}>
               <div className="flex items-center gap-3">
-                <History size={22} className="text-gray-600" />
-                <h2 className="text-xl font-bold">Movimientos de stock</h2>
+                <History size={22} style={{ color: '#999' }} />
+                <h2 className="text-xl font-bold" style={{ color: '#f0f0f0' }}>Movimientos de stock</h2>
               </div>
-              <button onClick={() => setShowMovements(false)} className="p-2 rounded-xl hover:bg-gray-100">
+              <button
+                onClick={() => setShowMovements(false)}
+                className="p-2 rounded-[10px] transition-colors"
+                style={{ color: '#999' }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = '#252525')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+              >
                 <X size={24} />
               </button>
             </div>
             <div className="p-6 space-y-2">
               {movements.length === 0 ? (
-                <p className="text-gray-400 text-center py-8 text-lg">No hay movimientos registrados</p>
+                <p className="text-center py-8 text-lg" style={{ color: '#666' }}>No hay movimientos registrados</p>
               ) : (
                 movements.map((mov) => {
                   const cfg = typeConfig[mov.type] || { label: mov.type, color: 'gray', icon: '?' }
                   return (
-                    <div key={mov.id} className="bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition-colors">
+                    <div
+                      key={mov.id}
+                      className="rounded-[10px] p-4 transition-colors"
+                      style={{ background: '#252525' }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = '#2a2a2a')}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = '#252525')}
+                    >
                       <div className="flex items-center justify-between mb-1">
                         <div className="flex items-center gap-3">
                           <Badge color={cfg.color}>{cfg.label}</Badge>
-                          <span className="font-semibold text-gray-900">
+                          <span className="font-semibold" style={{ color: '#f0f0f0' }}>
                             {(mov.product as unknown as Product)?.name || 'Producto'}
                           </span>
                         </div>
-                        <span className="text-sm text-gray-400">{formatDateShort(mov.created_at)}</span>
+                        <span className="text-sm" style={{ color: '#666' }}>{formatDateShort(mov.created_at)}</span>
                       </div>
-                      <div className="flex items-center gap-4 text-sm text-gray-600 mt-2">
+                      <div className="flex items-center gap-4 text-sm mt-2" style={{ color: '#999' }}>
                         <span>
-                          Cantidad: <strong className={mov.quantity > 0 ? 'text-green-600' : 'text-red-600'}>
+                          Cantidad: <strong style={{ color: mov.quantity > 0 ? '#3ec96c' : '#e05050' }}>
                             {mov.quantity > 0 ? '+' : ''}{mov.quantity}
                           </strong>
                         </span>
-                        <span className="text-gray-400">{mov.stock_before} → <strong>{mov.stock_after}</strong></span>
+                        <span style={{ color: '#666' }}>{mov.stock_before} → <strong style={{ color: '#f0f0f0' }}>{mov.stock_after}</strong></span>
                       </div>
-                      {mov.notes && <p className="text-sm text-gray-400 mt-1 italic">{mov.notes}</p>}
+                      {mov.notes && <p className="text-sm mt-1 italic" style={{ color: '#666' }}>{mov.notes}</p>}
                     </div>
                   )
                 })

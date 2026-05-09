@@ -2,14 +2,14 @@
 
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { StatSkeleton, ListSkeleton } from '@/components/ui/skeleton'
-import { EmptyState } from '@/components/ui/empty-state'
 import { Badge } from '@/components/ui/badge'
-import { getDashboardStats, getSales } from '@/lib/api'
+import { StatSkeleton, ListSkeleton } from '@/components/ui/skeleton'
+import { getDashboardStats, getSales, getSalesByPaymentMethod } from '@/lib/api'
 import { formatCurrency, formatDateShort } from '@/lib/helpers'
 import {
   Package, ShoppingCart, AlertTriangle, DollarSign,
-  TrendingDown, TrendingUp, Clock, Wallet,
+  TrendingUp, Clock, ArrowRight, ScanBarcode,
+  BarChart3, Hash,
 } from 'lucide-react'
 import type { Sale, Product } from '@/types/database'
 import Link from 'next/link'
@@ -24,6 +24,7 @@ interface DashboardData {
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardData | null>(null)
   const [recentSales, setRecentSales] = useState<Sale[]>([])
+  const [paymentData, setPaymentData] = useState<{ method: string; count: number; total: number }[]>([])
   const [loading, setLoading] = useState(true)
   const [time, setTime] = useState(new Date())
 
@@ -35,12 +36,19 @@ export default function DashboardPage() {
   useEffect(() => {
     async function load() {
       try {
-        const [dashStats, sales] = await Promise.all([
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+        const endOfDay = new Date()
+        endOfDay.setHours(23, 59, 59, 999)
+
+        const [dashStats, sales, payments] = await Promise.all([
           getDashboardStats(),
-          getSales(10),
+          getSales(8),
+          getSalesByPaymentMethod(today, endOfDay),
         ])
         setStats(dashStats)
         setRecentSales(sales)
+        setPaymentData(payments)
       } catch (err) {
         console.error('Error loading dashboard:', err)
       } finally {
@@ -57,178 +65,200 @@ export default function DashboardPage() {
     return 'Buenas noches'
   }
 
+  const avgTicket = stats?.salesToday.count ? stats.salesToday.total / stats.salesToday.count : 0
+  const paymentTotal = paymentData.reduce((s, p) => s + p.total, 0)
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
         <div>
-          <h1 className="text-3xl lg:text-4xl font-bold text-gray-900">Lo de Quique</h1>
-          <p className="text-lg text-gray-500 mt-1">{greeting()}, Nico</p>
+          <p className="text-xs text-[var(--text-muted)] capitalize">
+            {time.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+          </p>
+          <h1 className="text-[22px] font-bold text-[var(--text-primary)]">{greeting()}, Nico</h1>
         </div>
-        <div className="flex items-center gap-2 text-gray-400">
-          <Clock size={18} />
-          <span className="text-lg font-medium">
-            {time.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })}
-            {' - '}
-            {time.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
-          </span>
+        <div className="flex items-center gap-2 text-[var(--text-muted)] text-xs">
+          <Clock size={14} />
+          {time.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
         </div>
       </div>
 
-      {/* Stats cards */}
+      {/* Stat cards */}
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
           {Array.from({ length: 4 }).map((_, i) => <StatSkeleton key={i} />)}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="border-l-4 border-l-green-500">
-            <CardContent className="p-5">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-green-100 rounded-xl shrink-0">
-                  <DollarSign size={28} className="text-green-600" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm text-gray-500 font-medium">Ventas hoy</p>
-                  <p className="text-2xl font-bold text-gray-900 truncate">
-                    {formatCurrency(stats?.salesToday.total || 0)}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+          {/* Ventas hoy */}
+          <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-[var(--radius)] p-[18px] pb-0 relative overflow-hidden">
+            <p className="text-xs text-[var(--text-secondary)] mb-2">Ventas hoy</p>
+            <p className="text-[22px] font-bold">{formatCurrency(stats?.salesToday.total || 0)}</p>
+            <p className="text-xs text-[var(--text-muted)] mb-3.5">{stats?.salesToday.count || 0} operaciones</p>
+            <div className="h-[3px] -mx-[18px] bg-[var(--green)]" />
+          </div>
 
-          <Card className="border-l-4 border-l-blue-500">
-            <CardContent className="p-5">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-blue-100 rounded-xl shrink-0">
-                  <ShoppingCart size={28} className="text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500 font-medium">Operaciones hoy</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {stats?.salesToday.count || 0}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Ticket promedio */}
+          <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-[var(--radius)] p-[18px] pb-0 relative overflow-hidden">
+            <p className="text-xs text-[var(--text-secondary)] mb-2">Ticket promedio</p>
+            <p className="text-[22px] font-bold">{formatCurrency(avgTicket)}</p>
+            <p className="text-xs text-[var(--text-muted)] mb-3.5">por venta</p>
+            <div className="h-[3px] -mx-[18px] bg-[var(--blue)]" />
+          </div>
 
-          <Card className="border-l-4 border-l-purple-500">
-            <CardContent className="p-5">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-purple-100 rounded-xl shrink-0">
-                  <Package size={28} className="text-purple-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500 font-medium">Productos activos</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {stats?.totalProducts || 0}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Productos */}
+          <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-[var(--radius)] p-[18px] pb-0 relative overflow-hidden">
+            <p className="text-xs text-[var(--text-secondary)] mb-2">Productos activos</p>
+            <p className="text-[22px] font-bold">{stats?.totalProducts || 0}</p>
+            <p className="text-xs text-[var(--text-muted)] mb-3.5">en catalogo</p>
+            <div className="h-[3px] -mx-[18px] bg-[var(--orange)]" />
+          </div>
 
-          <Card className={`border-l-4 ${(stats?.lowStockCount || 0) > 0 ? 'border-l-red-500' : 'border-l-gray-300'}`}>
-            <CardContent className="p-5">
-              <div className="flex items-center gap-4">
-                <div className={`p-3 rounded-xl shrink-0 ${(stats?.lowStockCount || 0) > 0 ? 'bg-red-100' : 'bg-gray-100'}`}>
-                  <AlertTriangle size={28} className={(stats?.lowStockCount || 0) > 0 ? 'text-red-600' : 'text-gray-400'} />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500 font-medium">Stock bajo</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {stats?.lowStockCount || 0}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Stock bajo */}
+          <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-[var(--radius)] p-[18px] pb-0 relative overflow-hidden">
+            <span className="absolute top-3.5 right-3.5 text-[var(--orange)]">
+              {(stats?.lowStockCount || 0) > 0 && <AlertTriangle size={18} />}
+            </span>
+            <p className="text-xs text-[var(--text-secondary)] mb-2">Stock bajo</p>
+            <p className="text-[22px] font-bold">{stats?.lowStockCount || 0}</p>
+            <p className="text-xs text-[var(--text-muted)] mb-3.5">productos</p>
+            <div className={`h-[3px] -mx-[18px] ${(stats?.lowStockCount || 0) > 0 ? 'bg-[var(--red)]' : 'bg-[var(--green)]'}`} />
+          </div>
+        </div>
+      )}
+
+      {/* Sales chart + payment breakdown */}
+      {!loading && (
+        <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-[var(--radius)] p-5">
+          <div className="grid grid-cols-1 md:grid-cols-[200px_1fr_180px] gap-6 items-center">
+            {/* Total */}
+            <div>
+              <p className="text-xs text-[var(--text-muted)] mb-2">Total del dia</p>
+              <p className="text-[26px] font-bold">{formatCurrency(stats?.salesToday.total || 0)}</p>
+              <p className="text-xs text-[var(--text-muted)] mt-1">{stats?.salesToday.count || 0} ventas realizadas</p>
+            </div>
+
+            {/* Bar chart placeholder - last sales */}
+            <div className="flex items-end gap-2 h-16">
+              {recentSales.slice(0, 8).reverse().map((sale, i) => {
+                const maxTotal = Math.max(...recentSales.map(s => s.total), 1)
+                const height = Math.max((sale.total / maxTotal) * 100, 10)
+                return (
+                  <div key={sale.id} className="flex flex-col items-center gap-1.5 flex-1">
+                    <div
+                      className="w-full bg-[var(--green)] rounded-t"
+                      style={{ height: `${height}%` }}
+                    />
+                    <span className="text-[11px] text-[var(--text-muted)]">#{sale.sale_number}</span>
+                  </div>
+                )
+              })}
+              {recentSales.length === 0 && (
+                <p className="text-sm text-[var(--text-muted)] w-full text-center">Sin ventas hoy</p>
+              )}
+            </div>
+
+            {/* Payment donut info */}
+            <div className="space-y-2">
+              {paymentData.length > 0 ? paymentData.map((pm) => {
+                const colors: Record<string, string> = {
+                  efectivo: 'bg-[var(--green)]',
+                  tarjeta: 'bg-[var(--blue)]',
+                  transferencia: 'bg-[var(--purple)]',
+                  mercadopago: 'bg-[var(--cyan)]',
+                }
+                const pct = paymentTotal > 0 ? Math.round((pm.total / paymentTotal) * 100) : 0
+                return (
+                  <div key={pm.method} className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
+                    <div className={`w-2 h-2 rounded-full shrink-0 ${colors[pm.method] || 'bg-gray-500'}`} />
+                    <span className="capitalize flex-1">{pm.method}</span>
+                    <span className="font-semibold text-[var(--text-secondary)]">{pct}%</span>
+                  </div>
+                )
+              }) : (
+                <p className="text-xs text-[var(--text-muted)]">Sin datos</p>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
       {/* Quick actions */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
         <Link
           href="/ventas"
-          className="flex flex-col items-center gap-3 p-5 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 transition-colors shadow-sm"
+          className="flex flex-col items-center gap-2 p-4 bg-[var(--green)] text-white rounded-[var(--radius)] hover:bg-[var(--green-dark)] transition-colors font-semibold text-[13px]"
         >
-          <ShoppingCart size={32} />
-          <span className="font-bold text-lg">Nueva Venta</span>
+          <ShoppingCart size={22} />
+          Nueva Venta
         </Link>
         <Link
           href="/productos"
-          className="flex flex-col items-center gap-3 p-5 bg-white text-gray-700 rounded-2xl hover:bg-gray-50 transition-colors border-2 border-gray-200"
+          className="flex flex-col items-center gap-2 p-4 bg-[var(--bg-card2)] border border-[var(--border)] text-[var(--text-primary)] rounded-[var(--radius)] hover:border-[var(--green)] hover:text-[var(--green)] transition-colors text-[13px]"
         >
-          <Package size={32} />
-          <span className="font-bold text-lg">Productos</span>
+          <Package size={22} />
+          Productos
         </Link>
         <Link
           href="/stock"
-          className="flex flex-col items-center gap-3 p-5 bg-white text-gray-700 rounded-2xl hover:bg-gray-50 transition-colors border-2 border-gray-200"
+          className="flex flex-col items-center gap-2 p-4 bg-[var(--bg-card2)] border border-[var(--border)] text-[var(--text-primary)] rounded-[var(--radius)] hover:border-[var(--green)] hover:text-[var(--green)] transition-colors text-[13px]"
         >
-          <TrendingUp size={32} />
-          <span className="font-bold text-lg">Ingresar Stock</span>
+          <TrendingUp size={22} />
+          Ingresar Stock
         </Link>
         <Link
           href="/reportes"
-          className="flex flex-col items-center gap-3 p-5 bg-white text-gray-700 rounded-2xl hover:bg-gray-50 transition-colors border-2 border-gray-200"
+          className="flex flex-col items-center gap-2 p-4 bg-[var(--bg-card2)] border border-[var(--border)] text-[var(--text-primary)] rounded-[var(--radius)] hover:border-[var(--green)] hover:text-[var(--green)] transition-colors text-[13px]"
         >
-          <Wallet size={32} />
-          <span className="font-bold text-lg">Reportes</span>
+          <BarChart3 size={22} />
+          Reportes
         </Link>
       </div>
 
+      {/* Grid: low stock + recent sales */}
       {loading ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <ListSkeleton rows={4} />
           <ListSkeleton rows={4} />
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Low stock alert */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Low stock */}
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-red-100 rounded-lg">
-                    <TrendingDown size={20} className="text-red-500" />
-                  </div>
-                  <h2 className="text-xl font-bold text-gray-900">Stock bajo</h2>
+                <div className="flex items-center gap-2">
+                  <span className="text-[15px] font-semibold">Stock bajo</span>
+                  {(stats?.lowStockCount || 0) > 0 && (
+                    <span className="bg-[var(--green)] text-white text-[11px] font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                      {stats!.lowStockCount}
+                    </span>
+                  )}
                 </div>
-                {(stats?.lowStockCount || 0) > 0 && (
-                  <Badge color="red">{stats!.lowStockCount} productos</Badge>
-                )}
+                <Link href="/stock" className="text-xs text-[var(--text-muted)] hover:text-[var(--green)]">Ver todo</Link>
               </div>
             </CardHeader>
             <CardContent>
               {stats?.lowStockProducts && stats.lowStockProducts.length > 0 ? (
                 <div className="space-y-2">
                   {stats.lowStockProducts.map((p) => (
-                    <div key={p.id} className="flex items-center justify-between py-3 px-4 bg-red-50 rounded-xl border border-red-100">
+                    <div key={p.id} className="flex items-center justify-between py-2.5 px-3 bg-[var(--bg-card2)] rounded-lg">
                       <div>
-                        <p className="font-semibold text-gray-900">{p.name}</p>
-                        <p className="text-sm text-gray-500">{p.category?.name || 'Sin categoria'}</p>
+                        <p className="text-sm font-medium">{p.name}</p>
+                        <p className="text-xs text-[var(--text-muted)]">{p.category?.name || ''}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-lg font-bold text-red-600">{p.stock} {p.unit}</p>
-                        <p className="text-xs text-gray-400">Min: {p.min_stock}</p>
+                        <p className="text-sm font-bold text-[var(--red)]">{p.stock} {p.unit}</p>
+                        <p className="text-[10px] text-[var(--text-muted)]">min: {p.min_stock}</p>
                       </div>
                     </div>
                   ))}
-                  {(stats.lowStockCount || 0) > 10 && (
-                    <Link href="/stock" className="block text-center text-blue-600 font-semibold py-2 hover:underline">
-                      Ver todos los {stats.lowStockCount} productos
-                    </Link>
-                  )}
                 </div>
               ) : (
-                <div className="text-center py-8">
-                  <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-green-100 mb-3">
-                    <TrendingUp size={24} className="text-green-500" />
-                  </div>
-                  <p className="text-gray-400 text-lg">Todo el stock esta bien</p>
+                <div className="bg-[var(--bg-card2)] rounded-lg p-3 text-[13px] text-[var(--text-muted)] flex items-center gap-2.5">
+                  <TrendingUp size={16} className="text-[var(--green)]" />
+                  Todo el stock esta bien, no hay alertas
                 </div>
               )}
             </CardContent>
@@ -238,41 +268,37 @@ export default function DashboardPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <ShoppingCart size={20} className="text-blue-500" />
-                  </div>
-                  <h2 className="text-xl font-bold text-gray-900">Ultimas ventas</h2>
-                </div>
-                <Link href="/reportes" className="text-sm text-blue-600 font-semibold hover:underline">
-                  Ver todo
-                </Link>
+                <span className="text-[15px] font-semibold">Ultimas ventas</span>
+                <Link href="/reportes" className="text-xs text-[var(--text-muted)] hover:text-[var(--green)]">Ver todo</Link>
               </div>
             </CardHeader>
             <CardContent>
               {recentSales.length > 0 ? (
                 <div className="space-y-2">
-                  {recentSales.map((sale) => (
-                    <div key={sale.id} className="flex items-center justify-between py-3 px-4 bg-gray-50 rounded-xl">
+                  {recentSales.slice(0, 5).map((sale) => (
+                    <div key={sale.id} className="flex items-center justify-between py-2.5 px-3 bg-[var(--bg-card2)] rounded-lg">
                       <div>
-                        <p className="font-semibold text-gray-900">Venta #{sale.sale_number}</p>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <span className="text-sm text-gray-500">{formatDateShort(sale.created_at)}</span>
-                          <Badge color={sale.payment_method === 'efectivo' ? 'green' : sale.payment_method === 'tarjeta' ? 'blue' : 'purple'}>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">#{sale.sale_number}</span>
+                          <Badge color={
+                            sale.payment_method === 'efectivo' ? 'green' :
+                            sale.payment_method === 'tarjeta' ? 'blue' :
+                            sale.payment_method === 'transferencia' ? 'purple' : 'cyan'
+                          }>
                             {sale.payment_method}
                           </Badge>
                         </div>
+                        <p className="text-xs text-[var(--text-muted)] mt-0.5">{formatDateShort(sale.created_at)}</p>
                       </div>
-                      <p className="text-lg font-bold text-green-600">{formatCurrency(sale.total)}</p>
+                      <p className="text-sm font-bold text-[var(--green)]">{formatCurrency(sale.total)}</p>
                     </div>
                   ))}
                 </div>
               ) : (
-                <EmptyState
-                  icon={<ShoppingCart size={32} className="text-gray-400" />}
-                  title="Sin ventas"
-                  description="Las ventas del dia van a aparecer aca"
-                />
+                <div className="bg-[var(--bg-card2)] rounded-lg p-3 text-[13px] text-[var(--text-muted)] flex items-center gap-2.5">
+                  <ShoppingCart size={16} />
+                  Las ventas del dia van a aparecer aca
+                </div>
               )}
             </CardContent>
           </Card>

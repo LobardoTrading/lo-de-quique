@@ -92,18 +92,18 @@ export default function ReportesPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Reportes</h1>
-          <p className="text-lg text-gray-500">Analisis de ventas y rendimiento</p>
+          <h1 className="text-3xl font-bold text-[var(--text-primary)]">Reportes</h1>
+          <p className="text-lg text-[var(--text-secondary)]">Analisis de ventas y rendimiento</p>
         </div>
-        <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl">
+        <div className="flex items-center gap-1 bg-[var(--bg-card)] border border-[var(--border)] p-1 rounded-xl">
           {periods.map((p) => (
             <button
               key={p.id}
               onClick={() => setPeriod(p.id)}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
                 period === p.id
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
+                  ? 'bg-[var(--text-primary)] text-[var(--bg-main)] shadow-md'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}
             >
               {p.label}
@@ -119,47 +119,53 @@ export default function ReportesPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Card className="border-l-4 border-l-green-500">
-            <CardContent className="p-5">
+          {/* Facturacion */}
+          <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-[var(--radius)] overflow-hidden">
+            <div className="p-5">
               <div className="flex items-center gap-4">
-                <div className="p-3 bg-green-100 rounded-xl">
-                  <DollarSign size={28} className="text-green-600" />
+                <div className="p-3 rounded-xl" style={{ backgroundColor: 'rgba(62,201,108,0.15)' }}>
+                  <DollarSign size={28} className="text-[var(--green)]" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500 font-medium">Facturacion</p>
-                  <p className="text-2xl font-bold text-gray-900">{formatCurrency(totalRevenue)}</p>
+                  <p className="text-sm text-[var(--text-secondary)] font-medium">Facturacion</p>
+                  <p className="text-2xl font-bold text-[var(--text-primary)]">{formatCurrency(totalRevenue)}</p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+            <div className="h-[3px] bg-[var(--green)]" />
+          </div>
 
-          <Card className="border-l-4 border-l-blue-500">
-            <CardContent className="p-5">
+          {/* Ventas */}
+          <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-[var(--radius)] overflow-hidden">
+            <div className="p-5">
               <div className="flex items-center gap-4">
-                <div className="p-3 bg-blue-100 rounded-xl">
-                  <ShoppingCart size={28} className="text-blue-600" />
+                <div className="p-3 rounded-xl" style={{ backgroundColor: 'rgba(59,158,255,0.15)' }}>
+                  <ShoppingCart size={28} className="text-[var(--blue)]" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500 font-medium">Ventas</p>
-                  <p className="text-2xl font-bold text-gray-900">{totalSales}</p>
+                  <p className="text-sm text-[var(--text-secondary)] font-medium">Ventas</p>
+                  <p className="text-2xl font-bold text-[var(--text-primary)]">{totalSales}</p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+            <div className="h-[3px] bg-[var(--blue)]" />
+          </div>
 
-          <Card className="border-l-4 border-l-purple-500">
-            <CardContent className="p-5">
+          {/* Ticket promedio */}
+          <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-[var(--radius)] overflow-hidden">
+            <div className="p-5">
               <div className="flex items-center gap-4">
-                <div className="p-3 bg-purple-100 rounded-xl">
-                  <TrendingUp size={28} className="text-purple-600" />
+                <div className="p-3 rounded-xl" style={{ backgroundColor: 'rgba(168,85,247,0.15)' }}>
+                  <TrendingUp size={28} className="text-[var(--purple)]" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500 font-medium">Ticket promedio</p>
-                  <p className="text-2xl font-bold text-gray-900">{formatCurrency(avgTicket)}</p>
+                  <p className="text-sm text-[var(--text-secondary)] font-medium">Ticket promedio</p>
+                  <p className="text-2xl font-bold text-[var(--text-primary)]">{formatCurrency(avgTicket)}</p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+            <div className="h-[3px] bg-[var(--purple)]" />
+          </div>
         </div>
       )}
 
@@ -175,28 +181,31 @@ export default function ReportesPage() {
             <Card>
               <CardHeader>
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <BarChart3 size={20} className="text-blue-600" />
+                  <div className="p-2 rounded-lg" style={{ backgroundColor: 'rgba(62,201,108,0.15)' }}>
+                    <BarChart3 size={20} className="text-[var(--green)]" />
                   </div>
-                  <h2 className="text-xl font-bold text-gray-900">Ventas por dia</h2>
+                  <h2 className="text-xl font-bold text-[var(--text-primary)]">Ventas por dia</h2>
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   {dailyData.map((day) => (
                     <div key={day.date} className="flex items-center gap-4">
-                      <span className="text-sm text-gray-500 w-20 shrink-0">{day.date}</span>
-                      <div className="flex-1 h-8 bg-gray-100 rounded-lg overflow-hidden">
+                      <span className="text-sm text-[var(--text-secondary)] w-20 shrink-0">{day.date}</span>
+                      <div className="flex-1 h-8 bg-[var(--bg-input)] rounded-lg overflow-hidden">
                         <div
-                          className="h-full bg-blue-500 rounded-lg transition-all duration-500 flex items-center justify-end px-2"
-                          style={{ width: `${Math.max((day.total / maxDailyTotal) * 100, 8)}%` }}
+                          className="h-full rounded-lg transition-all duration-500 flex items-center justify-end px-2"
+                          style={{
+                            width: `${Math.max((day.total / maxDailyTotal) * 100, 8)}%`,
+                            backgroundColor: 'var(--green)',
+                          }}
                         >
-                          <span className="text-xs font-bold text-white whitespace-nowrap">
+                          <span className="text-xs font-bold text-[var(--bg-main)] whitespace-nowrap">
                             {formatCurrency(day.total)}
                           </span>
                         </div>
                       </div>
-                      <span className="text-sm text-gray-400 w-12 text-right">{day.count}v</span>
+                      <span className="text-sm text-[var(--text-muted)] w-12 text-right">{day.count}v</span>
                     </div>
                   ))}
                 </div>
@@ -209,32 +218,44 @@ export default function ReportesPage() {
             <Card>
               <CardHeader>
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-yellow-100 rounded-lg">
-                    <Award size={20} className="text-yellow-600" />
+                  <div className="p-2 rounded-lg" style={{ backgroundColor: 'rgba(245,166,35,0.15)' }}>
+                    <Award size={20} className="text-[var(--orange)]" />
                   </div>
-                  <h2 className="text-xl font-bold text-gray-900">Productos mas vendidos</h2>
+                  <h2 className="text-xl font-bold text-[var(--text-primary)]">Productos mas vendidos</h2>
                 </div>
               </CardHeader>
               <CardContent>
                 {topProducts.length === 0 ? (
-                  <p className="text-gray-400 text-center py-8">Sin datos para este periodo</p>
+                  <p className="text-[var(--text-muted)] text-center py-8">Sin datos para este periodo</p>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {topProducts.map((product, index) => (
-                      <div key={product.product_name} className="flex items-center gap-3">
-                        <span className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold shrink-0 ${
-                          index === 0 ? 'bg-yellow-100 text-yellow-700' :
-                          index === 1 ? 'bg-gray-200 text-gray-600' :
-                          index === 2 ? 'bg-orange-100 text-orange-700' :
-                          'bg-gray-100 text-gray-500'
-                        }`}>
+                      <div
+                        key={product.product_name}
+                        className="flex items-center gap-3 bg-[var(--bg-card2)] rounded-lg px-3 py-2.5"
+                      >
+                        <span
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold shrink-0"
+                          style={{
+                            backgroundColor:
+                              index === 0 ? 'rgba(245,166,35,0.2)' :
+                              index === 1 ? 'rgba(192,192,192,0.2)' :
+                              index === 2 ? 'rgba(205,127,50,0.2)' :
+                              'var(--bg-input)',
+                            color:
+                              index === 0 ? '#f5a623' :
+                              index === 1 ? '#c0c0c0' :
+                              index === 2 ? '#cd7f32' :
+                              'var(--text-muted)',
+                          }}
+                        >
                           {index + 1}
                         </span>
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-gray-900 truncate">{product.product_name}</p>
-                          <p className="text-sm text-gray-400">{product.total_quantity} vendidos</p>
+                          <p className="font-semibold text-[var(--text-primary)] truncate">{product.product_name}</p>
+                          <p className="text-sm text-[var(--text-muted)]">{product.total_quantity} vendidos</p>
                         </div>
-                        <span className="font-bold text-green-600 shrink-0">{formatCurrency(product.total_revenue)}</span>
+                        <span className="font-bold text-[var(--green)] shrink-0">{formatCurrency(product.total_revenue)}</span>
                       </div>
                     ))}
                   </div>
@@ -246,41 +267,42 @@ export default function ReportesPage() {
             <Card>
               <CardHeader>
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-purple-100 rounded-lg">
-                    <CreditCard size={20} className="text-purple-600" />
+                  <div className="p-2 rounded-lg" style={{ backgroundColor: 'rgba(168,85,247,0.15)' }}>
+                    <CreditCard size={20} className="text-[var(--purple)]" />
                   </div>
-                  <h2 className="text-xl font-bold text-gray-900">Por medio de pago</h2>
+                  <h2 className="text-xl font-bold text-[var(--text-primary)]">Por medio de pago</h2>
                 </div>
               </CardHeader>
               <CardContent>
                 {byPayment.length === 0 ? (
-                  <p className="text-gray-400 text-center py-8">Sin datos para este periodo</p>
+                  <p className="text-[var(--text-muted)] text-center py-8">Sin datos para este periodo</p>
                 ) : (
                   <div className="space-y-4">
                     {byPayment.map((pm) => {
                       const pct = paymentTotal > 0 ? (pm.total / paymentTotal) * 100 : 0
                       const colorMap: Record<string, string> = {
-                        efectivo: 'bg-green-500',
-                        tarjeta: 'bg-blue-500',
-                        transferencia: 'bg-purple-500',
-                        mercadopago: 'bg-cyan-500',
+                        efectivo: 'var(--green)',
+                        tarjeta: 'var(--blue)',
+                        transferencia: 'var(--purple)',
+                        mercadopago: 'var(--cyan)',
                       }
+                      const barColor = colorMap[pm.method] || 'var(--text-muted)'
                       return (
                         <div key={pm.method}>
                           <div className="flex items-center justify-between mb-1">
                             <div className="flex items-center gap-2">
-                              <span className="font-semibold text-gray-900 capitalize">{pm.method}</span>
+                              <span className="font-semibold text-[var(--text-primary)] capitalize">{pm.method}</span>
                               <Badge color="gray">{pm.count} ventas</Badge>
                             </div>
-                            <span className="font-bold text-gray-900">{formatCurrency(pm.total)}</span>
+                            <span className="font-bold text-[var(--text-primary)]">{formatCurrency(pm.total)}</span>
                           </div>
-                          <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+                          <div className="h-3 bg-[var(--bg-input)] rounded-full overflow-hidden">
                             <div
-                              className={`h-full rounded-full transition-all duration-500 ${colorMap[pm.method] || 'bg-gray-400'}`}
-                              style={{ width: `${pct}%` }}
+                              className="h-full rounded-full transition-all duration-500"
+                              style={{ width: `${pct}%`, backgroundColor: barColor }}
                             />
                           </div>
-                          <p className="text-xs text-gray-400 mt-1">{pct.toFixed(1)}% del total</p>
+                          <p className="text-xs text-[var(--text-muted)] mt-1">{pct.toFixed(1)}% del total</p>
                         </div>
                       )
                     })}

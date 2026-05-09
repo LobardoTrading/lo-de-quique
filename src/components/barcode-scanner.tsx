@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Camera, X, FlashlightOff, Flashlight } from 'lucide-react'
+import { X, FlashlightOff, Flashlight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 interface BarcodeScannerProps {
@@ -21,7 +21,6 @@ export function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps) {
     async function startScanner() {
       try {
         const { Html5Qrcode } = await import('html5-qrcode')
-
         if (!mounted || !scannerRef.current) return
 
         const scanner = new Html5Qrcode('barcode-reader', { verbose: false })
@@ -29,31 +28,22 @@ export function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps) {
 
         await scanner.start(
           { facingMode: 'environment' },
-          {
-            fps: 10,
-            qrbox: { width: 280, height: 150 },
-            aspectRatio: 1.5,
-          },
+          { fps: 10, qrbox: { width: 280, height: 150 }, aspectRatio: 1.5 },
           (decodedText) => {
             onScan(decodedText)
             scanner.stop().catch(() => {})
           },
           () => {}
         )
-      } catch (err) {
-        if (mounted) {
-          setError('No se pudo acceder a la camara. Asegurate de dar permiso.')
-        }
+      } catch {
+        if (mounted) setError('No se pudo acceder a la camara. Asegurate de dar permiso.')
       }
     }
 
     startScanner()
-
     return () => {
       mounted = false
-      if (html5QrCodeRef.current) {
-        html5QrCodeRef.current.stop().catch(() => {})
-      }
+      if (html5QrCodeRef.current) html5QrCodeRef.current.stop().catch(() => {})
     }
   }, [onScan])
 
@@ -64,10 +54,10 @@ export function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps) {
       const track = (scanner as unknown as { getRunningTrackCameraCapabilities?: () => { torchFeature: () => { isSupported: () => boolean; apply: (v: boolean) => Promise<void> } } })
         .getRunningTrackCameraCapabilities?.()
       if (track) {
-        const torchFeature = track.torchFeature()
-        if (torchFeature.isSupported()) {
+        const tf = track.torchFeature()
+        if (tf.isSupported()) {
           const newVal = !torch
-          await torchFeature.apply(newVal)
+          await tf.apply(newVal)
           setTorch(newVal)
         }
       }
@@ -75,21 +65,15 @@ export function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-[60] bg-black flex flex-col">
-      <div className="flex items-center justify-between p-4 bg-black/80">
-        <h2 className="text-white text-xl font-bold">Escanear codigo</h2>
+    <div className="fixed inset-0 z-[60] bg-[var(--bg-main)] flex flex-col">
+      <div className="flex items-center justify-between p-4 bg-[#111] border-b border-[var(--border)]">
+        <h2 className="text-[var(--text-primary)] text-base font-semibold">Escanear codigo</h2>
         <div className="flex gap-2">
-          <button
-            onClick={toggleTorch}
-            className="p-3 rounded-xl bg-white/10 text-white hover:bg-white/20"
-          >
-            {torch ? <Flashlight size={24} /> : <FlashlightOff size={24} />}
+          <button onClick={toggleTorch} className="p-2.5 rounded-lg bg-[var(--bg-card2)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
+            {torch ? <Flashlight size={20} /> : <FlashlightOff size={20} />}
           </button>
-          <button
-            onClick={onClose}
-            className="p-3 rounded-xl bg-white/10 text-white hover:bg-white/20"
-          >
-            <X size={24} />
+          <button onClick={onClose} className="p-2.5 rounded-lg bg-[var(--bg-card2)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
+            <X size={20} />
           </button>
         </div>
       </div>
@@ -97,13 +81,13 @@ export function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps) {
       <div className="flex-1 flex items-center justify-center p-4">
         {error ? (
           <div className="text-center">
-            <p className="text-white text-lg mb-4">{error}</p>
+            <p className="text-[var(--text-secondary)] mb-4">{error}</p>
             <Button variant="secondary" onClick={onClose}>Cerrar</Button>
           </div>
         ) : (
           <div className="w-full max-w-md">
-            <div id="barcode-reader" ref={scannerRef} className="rounded-2xl overflow-hidden" />
-            <p className="text-white/60 text-center mt-4 text-lg">
+            <div id="barcode-reader" ref={scannerRef} className="rounded-[var(--radius)] overflow-hidden" />
+            <p className="text-[var(--text-muted)] text-center mt-4 text-sm">
               Apunta al codigo de barras del producto
             </p>
           </div>

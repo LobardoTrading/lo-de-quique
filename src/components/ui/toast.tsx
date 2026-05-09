@@ -44,15 +44,18 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           <div
             key={t.id}
             className={`
-              flex items-center gap-3 px-5 py-4 rounded-xl shadow-lg text-white text-lg font-medium
-              animate-[slideIn_0.3s_ease-out]
-              ${t.type === 'success' ? 'bg-green-600' : 'bg-red-600'}
+              flex items-center gap-3 px-4 py-3 rounded-lg shadow-xl text-sm font-medium
+              animate-[slideIn_0.3s_ease-out] border
+              ${t.type === 'success'
+                ? 'bg-[var(--bg-card)] border-[var(--green)] text-[var(--green)]'
+                : 'bg-[var(--bg-card)] border-[var(--red)] text-[var(--red)]'
+              }
             `}
           >
-            {t.type === 'success' ? <CheckCircle size={24} /> : <AlertCircle size={24} />}
-            {t.message}
-            <button onClick={() => dismiss(t.id)} className="ml-2 p-1 hover:bg-white/20 rounded-lg">
-              <X size={18} />
+            {t.type === 'success' ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
+            <span className="text-[var(--text-primary)]">{t.message}</span>
+            <button onClick={() => dismiss(t.id)} className="ml-1 p-1 hover:bg-[var(--bg-card2)] rounded">
+              <X size={14} />
             </button>
           </div>
         ))}

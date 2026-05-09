@@ -21,11 +21,31 @@ import { BarcodeScanner } from '@/components/barcode-scanner'
 import type { Product, Category, CartItem, Sale } from '@/types/database'
 
 const PAYMENT_METHODS = [
-  { id: 'efectivo', label: 'Efectivo', icon: Banknote, color: 'border-green-500 bg-green-50 text-green-700' },
-  { id: 'tarjeta', label: 'Tarjeta', icon: CreditCard, color: 'border-blue-500 bg-blue-50 text-blue-700' },
-  { id: 'transferencia', label: 'Transferencia', icon: ArrowRightLeft, color: 'border-purple-500 bg-purple-50 text-purple-700' },
-  { id: 'mercadopago', label: 'MercadoPago', icon: Smartphone, color: 'border-cyan-500 bg-cyan-50 text-cyan-700' },
+  { id: 'efectivo', label: 'Efectivo', icon: Banknote, activeColor: 'var(--green)', activeBg: 'var(--green-dim)' },
+  { id: 'tarjeta', label: 'Tarjeta', icon: CreditCard, activeColor: 'var(--blue)', activeBg: 'rgba(59,158,255,0.15)' },
+  { id: 'transferencia', label: 'Transferencia', icon: ArrowRightLeft, activeColor: 'var(--purple)', activeBg: 'rgba(168,85,247,0.15)' },
+  { id: 'mercadopago', label: 'MercadoPago', icon: Smartphone, activeColor: 'var(--cyan)', activeBg: 'rgba(34,211,238,0.15)' },
 ]
+
+const cssVars = {
+  '--bg-main': '#121212',
+  '--bg-card': '#1e1e1e',
+  '--bg-card2': '#252525',
+  '--bg-input': '#2a2a2a',
+  '--border': '#333',
+  '--text-primary': '#f0f0f0',
+  '--text-secondary': '#999',
+  '--text-muted': '#666',
+  '--green': '#3ec96c',
+  '--green-dark': '#2eaa57',
+  '--green-dim': 'rgba(62,201,108,0.15)',
+  '--red': '#e05050',
+  '--blue': '#3b9eff',
+  '--purple': '#a855f7',
+  '--cyan': '#22d3ee',
+  '--orange': '#f5a623',
+  '--radius': '10px',
+} as React.CSSProperties
 
 export default function VentasPage() {
   const [products, setProducts] = useState<Product[]>([])
@@ -133,7 +153,6 @@ export default function VentasPage() {
       if (product) {
         addToCart(product)
         toast(`${product.name} agregado`)
-        // Vibration feedback
         if (navigator.vibrate) navigator.vibrate(100)
       } else {
         toast(`Producto no encontrado (${barcode})`, 'error')
@@ -195,8 +214,8 @@ export default function VentasPage() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div className="h-10 w-48 bg-gray-200 rounded-xl animate-pulse" />
+      <div style={{ ...cssVars, color: 'var(--text-primary)' }} className="space-y-6">
+        <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius)' }} className="h-10 w-48 animate-pulse" />
         <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
           {Array.from({ length: 8 }).map((_, i) => <CardSkeleton key={i} />)}
         </div>
@@ -205,60 +224,106 @@ export default function VentasPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div style={cssVars} className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Punto de Venta</h1>
-          <p className="text-lg text-gray-500">Registrar ventas</p>
+          <h1 style={{ color: 'var(--text-primary)' }} className="text-3xl font-bold">Punto de Venta</h1>
+          <p style={{ color: 'var(--text-secondary)' }} className="text-lg">Registrar ventas</p>
         </div>
         <div className="flex gap-3">
-          <Button size="lg" onClick={() => setShowScanner(true)}>
+          <button
+            onClick={() => setShowScanner(true)}
+            style={{
+              background: 'var(--green)',
+              color: '#fff',
+              borderRadius: 'var(--radius)',
+            }}
+            className="flex items-center gap-2 px-5 py-3 text-base font-semibold hover:opacity-90 transition-opacity"
+          >
             <ScanBarcode size={22} />
             Escanear
-          </Button>
-          <Button variant="secondary" size="lg" onClick={openHistory}>
+          </button>
+          <button
+            onClick={openHistory}
+            style={{
+              background: 'var(--bg-card)',
+              color: 'var(--text-primary)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius)',
+            }}
+            className="flex items-center gap-2 px-5 py-3 text-base font-semibold hover:opacity-80 transition-opacity"
+          >
             <History size={22} />
             Historial
-          </Button>
+          </button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Product selection */}
         <div className="lg:col-span-2 space-y-4">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex flex-col sm:flex-row gap-3">
-                <div className="flex-1 relative">
-                  <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Buscar producto..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3 text-lg rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:outline-none transition-colors"
-                    autoFocus
-                  />
-                </div>
-                <Select
-                  options={[
-                    { value: '', label: 'Todas' },
-                    ...categories.map((c) => ({ value: c.id, label: c.name })),
-                  ]}
-                  value={filterCat}
-                  onChange={(e) => setFilterCat(e.target.value)}
+          {/* Search */}
+          <div
+            style={{
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius)',
+              padding: '16px',
+            }}
+          >
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex-1 relative">
+                <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
+                <input
+                  type="text"
+                  placeholder="Buscar producto..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  autoFocus
+                  style={{
+                    background: 'var(--bg-input)',
+                    border: '2px solid var(--border)',
+                    borderRadius: 'var(--radius)',
+                    color: 'var(--text-primary)',
+                  }}
+                  className="w-full pl-12 pr-4 py-3 text-lg focus:outline-none transition-colors"
+                  onFocus={(e) => e.currentTarget.style.borderColor = 'var(--green)'}
+                  onBlur={(e) => e.currentTarget.style.borderColor = 'var(--border)'}
                 />
               </div>
-            </CardContent>
-          </Card>
+              <select
+                value={filterCat}
+                onChange={(e) => setFilterCat(e.target.value)}
+                style={{
+                  background: 'var(--bg-input)',
+                  border: '2px solid var(--border)',
+                  borderRadius: 'var(--radius)',
+                  color: 'var(--text-primary)',
+                  padding: '8px 12px',
+                }}
+                className="focus:outline-none"
+                onFocus={(e) => e.currentTarget.style.borderColor = 'var(--green)'}
+                onBlur={(e) => e.currentTarget.style.borderColor = 'var(--border)'}
+              >
+                <option value="">Todas</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
 
           {/* Category pills */}
           <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
             <button
               onClick={() => setFilterCat('')}
-              className={`shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-colors ${
-                filterCat === '' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
-              }`}
+              style={{
+                background: filterCat === '' ? 'var(--green)' : 'var(--bg-card)',
+                color: filterCat === '' ? '#fff' : 'var(--text-secondary)',
+                border: filterCat === '' ? 'none' : '1px solid var(--border)',
+                borderRadius: '9999px',
+              }}
+              className="shrink-0 px-4 py-2 text-sm font-semibold transition-colors"
             >
               Todos
             </button>
@@ -266,12 +331,13 @@ export default function VentasPage() {
               <button
                 key={cat.id}
                 onClick={() => setFilterCat(filterCat === cat.id ? '' : cat.id)}
-                className={`shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-colors ${
-                  filterCat === cat.id
-                    ? 'text-white'
-                    : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
-                }`}
-                style={filterCat === cat.id ? { backgroundColor: cat.color } : undefined}
+                style={{
+                  background: filterCat === cat.id ? cat.color : 'var(--bg-card)',
+                  color: filterCat === cat.id ? '#fff' : 'var(--text-secondary)',
+                  border: filterCat === cat.id ? 'none' : '1px solid var(--border)',
+                  borderRadius: '9999px',
+                }}
+                className="shrink-0 px-4 py-2 text-sm font-semibold transition-colors"
               >
                 {cat.name}
               </button>
@@ -280,7 +346,7 @@ export default function VentasPage() {
 
           {products.length === 0 ? (
             <EmptyState
-              icon={<Search size={36} className="text-gray-400" />}
+              icon={<Search size={36} style={{ color: 'var(--text-muted)' }} />}
               title="Sin resultados"
               description="No se encontraron productos con esa busqueda"
             />
@@ -298,29 +364,47 @@ export default function VentasPage() {
                       setCustomQty('')
                     }}
                     disabled={product.stock <= 0}
-                    className={`
-                      relative p-4 rounded-xl border-2 text-left transition-all
-                      ${product.stock <= 0
-                        ? 'border-gray-200 bg-gray-50 opacity-50 cursor-not-allowed'
-                        : inCart
-                          ? 'border-blue-400 bg-blue-50 shadow-md'
-                          : 'border-gray-200 bg-white hover:border-blue-300 hover:shadow-md active:scale-[0.97]'
-                      }
-                    `}
+                    style={{
+                      background: 'var(--bg-card)',
+                      border: inCart
+                        ? '2px solid var(--green)'
+                        : '2px solid var(--border)',
+                      borderRadius: 'var(--radius)',
+                      opacity: product.stock <= 0 ? 0.4 : 1,
+                      cursor: product.stock <= 0 ? 'not-allowed' : 'pointer',
+                    }}
+                    className="relative p-4 text-left transition-all hover:shadow-lg active:scale-[0.97]"
+                    onMouseEnter={(e) => {
+                      if (product.stock > 0 && !inCart) e.currentTarget.style.borderColor = 'var(--green)'
+                    }}
+                    onMouseLeave={(e) => {
+                      if (product.stock > 0 && !inCart) e.currentTarget.style.borderColor = 'var(--border)'
+                    }}
                   >
                     {inCart && (
-                      <span className="absolute -top-2 -right-2 bg-blue-600 text-white text-sm font-bold w-7 h-7 rounded-full flex items-center justify-center shadow">
+                      <span
+                        style={{
+                          background: 'var(--green)',
+                          color: '#fff',
+                        }}
+                        className="absolute -top-2 -right-2 text-sm font-bold w-7 h-7 rounded-full flex items-center justify-center shadow"
+                      >
                         {inCart.quantity}
                       </span>
                     )}
-                    <p className="font-semibold text-gray-900 truncate text-base">{product.name}</p>
+                    <p style={{ color: 'var(--text-primary)' }} className="font-semibold truncate text-base">{product.name}</p>
                     {product.category && (
                       <Badge color={product.category.color} className="mt-1 text-xs">
                         {product.category.name}
                       </Badge>
                     )}
-                    <p className="text-xl font-bold text-green-600 mt-2">{formatCurrency(product.price_sell)}</p>
-                    <p className={`text-sm mt-1 ${product.stock <= product.min_stock ? 'text-red-500 font-semibold' : 'text-gray-400'}`}>
+                    <p style={{ color: 'var(--green)' }} className="text-xl font-bold mt-2">{formatCurrency(product.price_sell)}</p>
+                    <p
+                      style={{
+                        color: product.stock <= product.min_stock ? 'var(--red)' : 'var(--text-muted)',
+                      }}
+                      className={`text-sm mt-1 ${product.stock <= product.min_stock ? 'font-semibold' : ''}`}
+                    >
                       Stock: {product.stock} {product.unit}
                     </p>
                   </button>
@@ -332,21 +416,41 @@ export default function VentasPage() {
 
         {/* Cart */}
         <div className="space-y-4">
-          <Card className="sticky top-4 border-2 border-gray-200">
-            <CardHeader className="pb-2">
+          <div
+            style={{
+              background: 'var(--bg-card)',
+              border: '2px solid var(--border)',
+              borderRadius: 'var(--radius)',
+            }}
+            className="sticky top-4"
+          >
+            {/* Cart header */}
+            <div style={{ borderBottom: '1px solid var(--border)', padding: '16px' }}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <ShoppingCart size={20} className="text-blue-600" />
+                  <div style={{ background: 'var(--green-dim)', borderRadius: '8px', padding: '8px' }}>
+                    <ShoppingCart size={20} style={{ color: 'var(--green)' }} />
                   </div>
-                  <h2 className="text-xl font-bold">Carrito</h2>
+                  <h2 style={{ color: 'var(--text-primary)' }} className="text-xl font-bold">Carrito</h2>
                 </div>
                 {cart.length > 0 && (
                   <div className="flex items-center gap-2">
-                    <Badge color="blue">{cartItems} items</Badge>
+                    <span
+                      style={{
+                        background: 'var(--green-dim)',
+                        color: 'var(--green)',
+                        borderRadius: '9999px',
+                        padding: '2px 10px',
+                        fontSize: '13px',
+                        fontWeight: 600,
+                      }}
+                    >
+                      {cartItems} items
+                    </span>
                     <button
                       onClick={() => setCart([])}
-                      className="p-2 rounded-lg hover:bg-red-50 text-red-400 transition-colors"
+                      style={{ color: 'var(--red)' }}
+                      className="p-2 rounded-lg hover:opacity-70 transition-opacity"
                       title="Vaciar carrito"
                     >
                       <Trash2 size={18} />
@@ -354,23 +458,33 @@ export default function VentasPage() {
                   </div>
                 )}
               </div>
-            </CardHeader>
-            <CardContent>
+            </div>
+
+            {/* Cart content */}
+            <div style={{ padding: '16px' }}>
               {cart.length === 0 ? (
                 <div className="text-center py-8">
-                  <ShoppingCart size={40} className="mx-auto text-gray-200 mb-3" />
-                  <p className="text-gray-400 text-lg">Selecciona productos</p>
-                  <p className="text-gray-300 text-sm mt-1">Toca un producto o escanea un codigo</p>
+                  <ShoppingCart size={40} className="mx-auto mb-3" style={{ color: 'var(--text-muted)' }} />
+                  <p style={{ color: 'var(--text-muted)' }} className="text-lg">Selecciona productos</p>
+                  <p style={{ color: 'var(--text-muted)' }} className="text-sm mt-1">Toca un producto o escanea un codigo</p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {cart.map((item) => (
-                    <div key={item.product.id} className="bg-gray-50 rounded-xl p-3">
+                    <div
+                      key={item.product.id}
+                      style={{
+                        background: 'var(--bg-card2)',
+                        borderRadius: 'var(--radius)',
+                        padding: '12px',
+                      }}
+                    >
                       <div className="flex items-start justify-between">
-                        <p className="font-semibold text-gray-900 text-sm flex-1 leading-tight">{item.product.name}</p>
+                        <p style={{ color: 'var(--text-primary)' }} className="font-semibold text-sm flex-1 leading-tight">{item.product.name}</p>
                         <button
                           onClick={() => setCart(prev => prev.filter(i => i.product.id !== item.product.id))}
-                          className="p-1 hover:bg-red-100 rounded-lg text-red-400 shrink-0 ml-1"
+                          style={{ color: 'var(--red)' }}
+                          className="p-1 rounded-lg hover:opacity-70 shrink-0 ml-1"
                         >
                           <X size={16} />
                         </button>
@@ -379,7 +493,13 @@ export default function VentasPage() {
                         <div className="flex items-center gap-1">
                           <button
                             onClick={() => updateQuantity(item.product.id, -1)}
-                            className="w-9 h-9 flex items-center justify-center bg-white border-2 border-gray-200 rounded-lg hover:border-red-300 active:bg-red-50 transition-colors"
+                            style={{
+                              background: 'var(--bg-input)',
+                              border: '2px solid var(--border)',
+                              borderRadius: '8px',
+                              color: 'var(--text-primary)',
+                            }}
+                            className="w-9 h-9 flex items-center justify-center transition-colors"
                           >
                             <Minus size={16} />
                           </button>
@@ -387,23 +507,37 @@ export default function VentasPage() {
                             type="number"
                             value={item.quantity}
                             onChange={(e) => setItemQuantity(item.product.id, Number(e.target.value))}
-                            className="w-14 text-center font-bold text-lg border-2 border-gray-200 rounded-lg py-1 focus:border-blue-500 focus:outline-none"
                             min={0}
                             max={item.product.stock}
+                            style={{
+                              background: 'var(--bg-input)',
+                              border: '2px solid var(--border)',
+                              borderRadius: '8px',
+                              color: 'var(--text-primary)',
+                            }}
+                            className="w-14 text-center font-bold text-lg py-1 focus:outline-none"
+                            onFocus={(e) => e.currentTarget.style.borderColor = 'var(--green)'}
+                            onBlur={(e) => e.currentTarget.style.borderColor = 'var(--border)'}
                           />
                           <button
                             onClick={() => updateQuantity(item.product.id, 1)}
-                            className="w-9 h-9 flex items-center justify-center bg-white border-2 border-gray-200 rounded-lg hover:border-green-300 active:bg-green-50 transition-colors"
+                            style={{
+                              background: 'var(--bg-input)',
+                              border: '2px solid var(--border)',
+                              borderRadius: '8px',
+                              color: 'var(--text-primary)',
+                            }}
+                            className="w-9 h-9 flex items-center justify-center transition-colors"
                           >
                             <Plus size={16} />
                           </button>
                         </div>
                         <div className="text-right">
-                          <p className="font-bold text-green-700">
+                          <p style={{ color: 'var(--green)' }} className="font-bold">
                             {formatCurrency(item.product.price_sell * item.quantity)}
                           </p>
                           {item.quantity > 1 && (
-                            <p className="text-xs text-gray-400">{formatCurrency(item.product.price_sell)} c/u</p>
+                            <p style={{ color: 'var(--text-muted)' }} className="text-xs">{formatCurrency(item.product.price_sell)} c/u</p>
                           )}
                         </div>
                       </div>
@@ -416,25 +550,38 @@ export default function VentasPage() {
                     placeholder="Notas de la venta (opcional)"
                     value={saleNotes}
                     onChange={(e) => setSaleNotes(e.target.value)}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 focus:border-blue-500 focus:outline-none"
+                    style={{
+                      background: 'var(--bg-input)',
+                      border: '1px solid var(--border)',
+                      borderRadius: '8px',
+                      color: 'var(--text-primary)',
+                    }}
+                    className="w-full px-3 py-2 text-sm focus:outline-none"
+                    onFocus={(e) => e.currentTarget.style.borderColor = 'var(--green)'}
+                    onBlur={(e) => e.currentTarget.style.borderColor = 'var(--border)'}
                   />
 
-                  <div className="border-t-2 border-gray-200 pt-4 mt-4">
+                  <div style={{ borderTop: '2px solid var(--border)', paddingTop: '16px', marginTop: '16px' }}>
                     <div className="flex justify-between items-center mb-4">
-                      <span className="text-xl font-bold text-gray-900">TOTAL</span>
-                      <span className="text-3xl font-bold text-green-600">{formatCurrency(cartTotal)}</span>
+                      <span style={{ color: 'var(--text-primary)' }} className="text-xl font-bold">TOTAL</span>
+                      <span style={{ color: 'var(--green)', fontSize: '1.875rem' }} className="font-bold">{formatCurrency(cartTotal)}</span>
                     </div>
 
                     <div className="grid grid-cols-2 gap-2 mb-4">
                       {PAYMENT_METHODS.map((pm) => {
                         const Icon = pm.icon
+                        const isActive = paymentMethod === pm.id
                         return (
                           <button
                             key={pm.id}
                             onClick={() => setPaymentMethod(pm.id)}
-                            className={`flex items-center justify-center gap-2 p-3 rounded-xl border-2 font-semibold transition-all text-sm ${
-                              paymentMethod === pm.id ? pm.color : 'border-gray-200 text-gray-400 hover:border-gray-300'
-                            }`}
+                            style={{
+                              background: isActive ? pm.activeBg : 'transparent',
+                              border: `2px solid ${isActive ? pm.activeColor : 'var(--border)'}`,
+                              borderRadius: 'var(--radius)',
+                              color: isActive ? pm.activeColor : 'var(--text-muted)',
+                            }}
+                            className="flex items-center justify-center gap-2 p-3 font-semibold transition-all text-sm"
                           >
                             <Icon size={18} />
                             {pm.label}
@@ -443,20 +590,24 @@ export default function VentasPage() {
                       })}
                     </div>
 
-                    <Button
-                      size="xl"
-                      variant="success"
-                      className="w-full"
+                    <button
                       onClick={() => setShowConfirm(true)}
                       disabled={processing}
+                      style={{
+                        background: 'var(--green)',
+                        color: '#fff',
+                        borderRadius: 'var(--radius)',
+                        opacity: processing ? 0.6 : 1,
+                      }}
+                      className="w-full py-4 text-lg font-bold hover:opacity-90 transition-opacity"
                     >
                       {processing ? 'Procesando...' : `Cobrar ${formatCurrency(cartTotal)}`}
-                    </Button>
+                    </button>
                   </div>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -474,21 +625,34 @@ export default function VentasPage() {
       {/* Sale Ticket */}
       {showTicket && lastSale && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-black/50" onClick={() => setShowTicket(false)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+          <div className="fixed inset-0 bg-black/70" onClick={() => setShowTicket(false)} />
+          <div
+            style={{
+              background: 'var(--bg-card)',
+              borderRadius: '16px',
+              border: '1px solid var(--border)',
+            }}
+            className="relative shadow-2xl w-full max-w-sm overflow-hidden"
+          >
             {/* Success header */}
-            <div className="bg-green-600 text-white p-6 text-center">
+            <div
+              style={{
+                background: 'var(--green)',
+                color: '#fff',
+              }}
+              className="p-6 text-center"
+            >
               <CheckCircle size={48} className="mx-auto mb-3" />
               <h2 className="text-2xl font-bold">Venta registrada</h2>
-              <p className="text-green-100 mt-1">#{lastSale.sale_number}</p>
+              <p style={{ opacity: 0.8 }} className="mt-1">#{lastSale.sale_number}</p>
             </div>
 
             {/* Ticket body */}
             <div className="p-6">
-              <div className="border-b border-dashed border-gray-300 pb-4 mb-4">
+              <div style={{ borderBottom: '1px dashed var(--border)' }} className="pb-4 mb-4">
                 <div className="text-center mb-3">
-                  <p className="font-bold text-lg">Lo de Quique</p>
-                  <p className="text-sm text-gray-500">{formatDateShort(lastSale.created_at)}</p>
+                  <p style={{ color: 'var(--text-primary)' }} className="font-bold text-lg">Lo de Quique</p>
+                  <p style={{ color: 'var(--text-secondary)' }} className="text-sm">{formatDateShort(lastSale.created_at)}</p>
                 </div>
               </div>
 
@@ -496,32 +660,35 @@ export default function VentasPage() {
                 {lastSale.items?.map((item) => (
                   <div key={item.id} className="flex justify-between text-sm">
                     <div>
-                      <span className="font-medium">{item.product_name}</span>
-                      <span className="text-gray-400 ml-2">x{item.quantity}</span>
+                      <span style={{ color: 'var(--text-primary)' }} className="font-medium">{item.product_name}</span>
+                      <span style={{ color: 'var(--text-muted)' }} className="ml-2">x{item.quantity}</span>
                     </div>
-                    <span className="font-semibold">{formatCurrency(item.subtotal)}</span>
+                    <span style={{ color: 'var(--text-primary)' }} className="font-semibold">{formatCurrency(item.subtotal)}</span>
                   </div>
                 ))}
               </div>
 
-              <div className="border-t border-dashed border-gray-300 pt-3">
+              <div style={{ borderTop: '1px dashed var(--border)' }} className="pt-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-xl font-bold">TOTAL</span>
-                  <span className="text-2xl font-bold text-green-600">{formatCurrency(lastSale.total)}</span>
+                  <span style={{ color: 'var(--text-primary)' }} className="text-xl font-bold">TOTAL</span>
+                  <span style={{ color: 'var(--green)' }} className="text-2xl font-bold">{formatCurrency(lastSale.total)}</span>
                 </div>
-                <p className="text-sm text-gray-500 mt-1 capitalize">
+                <p style={{ color: 'var(--text-secondary)' }} className="text-sm mt-1 capitalize">
                   Pago: {lastSale.payment_method}
                 </p>
               </div>
 
-              <Button
-                variant="primary"
-                size="lg"
-                className="w-full mt-6"
+              <button
                 onClick={() => setShowTicket(false)}
+                style={{
+                  background: 'var(--green)',
+                  color: '#fff',
+                  borderRadius: 'var(--radius)',
+                }}
+                className="w-full py-3 text-base font-semibold mt-6 hover:opacity-90 transition-opacity"
               >
                 Cerrar
-              </Button>
+              </button>
             </div>
           </div>
         </div>
@@ -530,12 +697,19 @@ export default function VentasPage() {
       {/* Custom quantity dialog */}
       {customQtyProduct && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-black/40" onClick={() => setCustomQtyProduct(null)} />
-          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-xs p-6 space-y-4">
-            <h3 className="text-lg font-bold text-gray-900">{customQtyProduct.name}</h3>
-            <p className="text-sm text-gray-500">Stock: {customQtyProduct.stock} {customQtyProduct.unit}</p>
+          <div className="fixed inset-0 bg-black/60" onClick={() => setCustomQtyProduct(null)} />
+          <div
+            style={{
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border)',
+              borderRadius: '16px',
+            }}
+            className="relative shadow-xl w-full max-w-xs p-6 space-y-4"
+          >
+            <h3 style={{ color: 'var(--text-primary)' }} className="text-lg font-bold">{customQtyProduct.name}</h3>
+            <p style={{ color: 'var(--text-secondary)' }} className="text-sm">Stock: {customQtyProduct.stock} {customQtyProduct.unit}</p>
             <div>
-              <label className="text-sm font-medium text-gray-600">Cantidad</label>
+              <label style={{ color: 'var(--text-secondary)' }} className="text-sm font-medium">Cantidad</label>
               <input
                 type="number"
                 value={customQty}
@@ -545,17 +719,42 @@ export default function VentasPage() {
                 max={customQtyProduct.stock}
                 step="0.001"
                 autoFocus
-                className="w-full px-4 py-3 text-2xl font-bold text-center rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:outline-none mt-2"
+                style={{
+                  background: 'var(--bg-input)',
+                  border: '2px solid var(--border)',
+                  borderRadius: 'var(--radius)',
+                  color: 'var(--text-primary)',
+                }}
+                className="w-full px-4 py-3 text-2xl font-bold text-center mt-2 focus:outline-none"
+                onFocus={(e) => e.currentTarget.style.borderColor = 'var(--green)'}
+                onBlur={(e) => e.currentTarget.style.borderColor = 'var(--border)'}
                 onKeyDown={(e) => e.key === 'Enter' && handleCustomQty()}
               />
             </div>
             <div className="flex gap-3">
-              <Button variant="secondary" size="lg" className="flex-1" onClick={() => setCustomQtyProduct(null)}>
+              <button
+                onClick={() => setCustomQtyProduct(null)}
+                style={{
+                  background: 'var(--bg-card2)',
+                  color: 'var(--text-secondary)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius)',
+                }}
+                className="flex-1 py-3 font-semibold hover:opacity-80 transition-opacity"
+              >
                 Cancelar
-              </Button>
-              <Button size="lg" className="flex-1" onClick={handleCustomQty}>
+              </button>
+              <button
+                onClick={handleCustomQty}
+                style={{
+                  background: 'var(--green)',
+                  color: '#fff',
+                  borderRadius: 'var(--radius)',
+                }}
+                className="flex-1 py-3 font-semibold hover:opacity-90 transition-opacity"
+              >
                 Agregar
-              </Button>
+              </button>
             </div>
           </div>
         </div>
@@ -564,51 +763,92 @@ export default function VentasPage() {
       {/* Sales History */}
       {showHistory && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-black/40" onClick={() => setShowHistory(false)} />
-          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[85vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white rounded-t-2xl border-b border-gray-100 px-6 py-4 flex items-center justify-between z-10">
+          <div className="fixed inset-0 bg-black/60" onClick={() => setShowHistory(false)} />
+          <div
+            style={{
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border)',
+              borderRadius: '16px',
+            }}
+            className="relative shadow-xl w-full max-w-2xl max-h-[85vh] overflow-y-auto"
+          >
+            <div
+              style={{
+                background: 'var(--bg-card)',
+                borderBottom: '1px solid var(--border)',
+                borderRadius: '16px 16px 0 0',
+              }}
+              className="sticky top-0 px-6 py-4 flex items-center justify-between z-10"
+            >
               <div className="flex items-center gap-3">
-                <Receipt size={22} className="text-gray-600" />
-                <h2 className="text-xl font-bold">Historial de ventas</h2>
+                <Receipt size={22} style={{ color: 'var(--text-secondary)' }} />
+                <h2 style={{ color: 'var(--text-primary)' }} className="text-xl font-bold">Historial de ventas</h2>
               </div>
-              <button onClick={() => setShowHistory(false)} className="p-2 rounded-xl hover:bg-gray-100">
+              <button
+                onClick={() => setShowHistory(false)}
+                style={{ color: 'var(--text-secondary)' }}
+                className="p-2 rounded-xl hover:opacity-70"
+              >
                 <X size={24} />
               </button>
             </div>
             <div className="p-6 space-y-3">
               {salesHistory.length === 0 ? (
-                <p className="text-gray-400 text-center py-8 text-lg">No hay ventas registradas</p>
+                <p style={{ color: 'var(--text-muted)' }} className="text-center py-8 text-lg">No hay ventas registradas</p>
               ) : (
                 salesHistory.map((sale) => (
-                  <div key={sale.id} className="bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition-colors">
+                  <div
+                    key={sale.id}
+                    style={{
+                      background: 'var(--bg-card2)',
+                      borderRadius: 'var(--radius)',
+                    }}
+                    className="p-4 hover:opacity-90 transition-opacity"
+                  >
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-1 text-gray-400">
+                        <div className="flex items-center gap-1" style={{ color: 'var(--text-muted)' }}>
                           <Hash size={14} />
-                          <span className="font-bold text-gray-900">{sale.sale_number}</span>
+                          <span style={{ color: 'var(--text-primary)' }} className="font-bold">{sale.sale_number}</span>
                         </div>
-                        <Badge color={
-                          sale.payment_method === 'efectivo' ? 'green' :
-                          sale.payment_method === 'tarjeta' ? 'blue' :
-                          sale.payment_method === 'transferencia' ? 'purple' : 'cyan'
-                        }>
+                        <span
+                          style={{
+                            background:
+                              sale.payment_method === 'efectivo' ? 'var(--green-dim)' :
+                              sale.payment_method === 'tarjeta' ? 'rgba(59,158,255,0.15)' :
+                              sale.payment_method === 'transferencia' ? 'rgba(168,85,247,0.15)' : 'rgba(34,211,238,0.15)',
+                            color:
+                              sale.payment_method === 'efectivo' ? 'var(--green)' :
+                              sale.payment_method === 'tarjeta' ? 'var(--blue)' :
+                              sale.payment_method === 'transferencia' ? 'var(--purple)' : 'var(--cyan)',
+                            borderRadius: '9999px',
+                            padding: '2px 10px',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                          }}
+                        >
                           {sale.payment_method}
-                        </Badge>
+                        </span>
                       </div>
-                      <span className="text-lg font-bold text-green-600">{formatCurrency(sale.total)}</span>
+                      <span style={{ color: 'var(--green)' }} className="text-lg font-bold">{formatCurrency(sale.total)}</span>
                     </div>
-                    <p className="text-sm text-gray-500">{formatDateShort(sale.created_at)}</p>
+                    <p style={{ color: 'var(--text-secondary)' }} className="text-sm">{formatDateShort(sale.created_at)}</p>
                     {sale.items && sale.items.length > 0 && (
-                      <div className="mt-2 pt-2 border-t border-gray-200 text-sm text-gray-600 space-y-1">
+                      <div
+                        style={{ borderTop: '1px solid var(--border)' }}
+                        className="mt-2 pt-2 text-sm space-y-1"
+                      >
                         {sale.items.map((item) => (
                           <div key={item.id} className="flex justify-between">
-                            <span>{item.product_name} <span className="text-gray-400">x{item.quantity}</span></span>
-                            <span className="font-medium">{formatCurrency(item.subtotal)}</span>
+                            <span style={{ color: 'var(--text-secondary)' }}>
+                              {item.product_name} <span style={{ color: 'var(--text-muted)' }}>x{item.quantity}</span>
+                            </span>
+                            <span style={{ color: 'var(--text-primary)' }} className="font-medium">{formatCurrency(item.subtotal)}</span>
                           </div>
                         ))}
                       </div>
                     )}
-                    {sale.notes && <p className="text-sm text-gray-400 mt-2 italic">{sale.notes}</p>}
+                    {sale.notes && <p style={{ color: 'var(--text-muted)' }} className="text-sm mt-2 italic">{sale.notes}</p>}
                   </div>
                 ))
               )}

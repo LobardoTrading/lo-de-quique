@@ -19,11 +19,8 @@ const sizes = {
 
 export function Modal({ open, onClose, title, children, size = 'md' }: ModalProps) {
   useEffect(() => {
-    if (open) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = ''
-    }
+    if (open) document.body.style.overflow = 'hidden'
+    else document.body.style.overflow = ''
     return () => { document.body.style.overflow = '' }
   }, [open])
 
@@ -31,19 +28,18 @@ export function Modal({ open, onClose, title, children, size = 'md' }: ModalProp
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="fixed inset-0 bg-black/40" onClick={onClose} />
-      <div className={`relative bg-white rounded-2xl shadow-xl w-full ${sizes[size]} max-h-[90vh] overflow-y-auto`}>
-        <div className="sticky top-0 bg-white rounded-t-2xl border-b border-gray-100 px-6 py-4 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-gray-900">{title}</h2>
+      <div className="fixed inset-0 bg-black/60" onClick={onClose} />
+      <div className={`relative bg-[var(--bg-card)] border border-[var(--border)] rounded-[var(--radius)] shadow-2xl w-full ${sizes[size]} max-h-[90vh] overflow-y-auto animate-[fadeIn_0.2s_ease-out]`}>
+        <div className="sticky top-0 bg-[var(--bg-card)] rounded-t-[var(--radius)] border-b border-[var(--border)] px-5 py-4 flex items-center justify-between z-10">
+          <h2 className="text-base font-semibold text-[var(--text-primary)]">{title}</h2>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl hover:bg-gray-100 transition-colors"
-            aria-label="Cerrar"
+            className="p-1.5 rounded-lg hover:bg-[var(--bg-card2)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
           >
-            <X size={24} />
+            <X size={20} />
           </button>
         </div>
-        <div className="p-6">{children}</div>
+        <div className="p-5">{children}</div>
       </div>
     </div>
   )

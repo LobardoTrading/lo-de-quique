@@ -14,30 +14,27 @@ interface ConfirmDialogProps {
 }
 
 export function ConfirmDialog({
-  open,
-  title,
-  message,
+  open, title, message,
   confirmLabel = 'Confirmar',
   cancelLabel = 'Cancelar',
   variant = 'primary',
-  onConfirm,
-  onCancel,
+  onConfirm, onCancel,
 }: ConfirmDialogProps) {
   if (!open) return null
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
-      <div className="fixed inset-0 bg-black/50" onClick={onCancel} />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-5">
+      <div className="fixed inset-0 bg-black/60" onClick={onCancel} />
+      <div className="relative bg-[var(--bg-card)] border border-[var(--border)] rounded-[var(--radius)] shadow-2xl w-full max-w-sm p-5 space-y-4 animate-[fadeIn_0.2s_ease-out]">
         <div>
-          <h3 className="text-xl font-bold text-gray-900">{title}</h3>
-          <p className="text-gray-600 mt-2 text-lg">{message}</p>
+          <h3 className="text-base font-semibold text-[var(--text-primary)]">{title}</h3>
+          <p className="text-sm text-[var(--text-muted)] mt-2">{message}</p>
         </div>
         <div className="flex gap-3">
-          <Button variant="secondary" size="lg" className="flex-1" onClick={onCancel}>
+          <Button variant="ghost" size="md" className="flex-1 border border-[var(--border)]" onClick={onCancel}>
             {cancelLabel}
           </Button>
-          <Button variant={variant} size="lg" className="flex-1" onClick={onConfirm}>
+          <Button variant={variant} size="md" className="flex-1" onClick={onConfirm}>
             {confirmLabel}
           </Button>
         </div>
