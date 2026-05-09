@@ -5,9 +5,10 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input, Select } from '@/components/ui/input'
 import { useToast } from '@/components/ui/toast'
-import { getProducts, getCategories, createSale, getSales } from '@/lib/api'
+import { getProducts, getCategories, createSale, getSales, getProductByBarcode } from '@/lib/api'
 import { formatCurrency, formatDateShort } from '@/lib/helpers'
-import { Search, Plus, Minus, Trash2, ShoppingCart, CreditCard, Banknote, History, X } from 'lucide-react'
+import { Search, Plus, Minus, Trash2, ShoppingCart, CreditCard, Banknote, History, X, ScanBarcode } from 'lucide-react'
+import { BarcodeScanner } from '@/components/barcode-scanner'
 import type { Product, Category, CartItem, Sale } from '@/types/database'
 
 export default function VentasPage() {
@@ -21,6 +22,7 @@ export default function VentasPage() {
   const [showHistory, setShowHistory] = useState(false)
   const [salesHistory, setSalesHistory] = useState<Sale[]>([])
   const [loading, setLoading] = useState(true)
+  const [showScanner, setShowScanner] = useState(false)
   const { toast } = useToast()
 
   const loadProducts = useCallback(async () => {
@@ -67,6 +69,21 @@ export default function VentasPage() {
       }
       return [...prev, { product, quantity: 1 }]
     })
+  }
+
+  async function handleBarcodeScan(barcode: string) {
+    setShowScanner(false)
+    try {
+      const product = await getProductByBarcode(barcode)
+      if (product) {
+        addToCart(product)
+        toast(`${product.name} agregado`)
+      } else {
+        toast(`Producto no encontrado (${barcode})`, 'error')
+      }
+    } catch {
+      toast('Error al buscar producto', 'error')
+    }
   }
 
   function updateQuantity(productId: string, delta: number) {
@@ -131,10 +148,16 @@ export default function VentasPage() {
           <h1 className="text-3xl font-bold text-gray-900">Ventas</h1>
           <p className="text-lg text-gray-500">Punto de venta</p>
         </div>
-        <Button variant="secondary" size="lg" onClick={openHistory}>
-          <History size={22} />
-          Historial
-        </Button>
+        <div className="flex gap-3">
+          <Button size="lg" onClick={() => setShowScanner(true)}>
+            <ScanBarcode size={22} />
+            Escanear
+          </Button>
+          <Button variant="secondary" size="lg" onClick={openHistory}>
+            <History size={22} />
+            Historial
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -345,6 +368,13 @@ export default function VentasPage() {
             </div>
           </div>
         </div>
+      )}
+      {/* Barcode Scanner */}
+      {showScanner && (
+        <BarcodeScanner
+          onScan={handleBarcodeScan}
+          onClose={() => setShowScanner(false)}
+        />
       )}
     </div>
   )

@@ -39,6 +39,17 @@ export async function getProducts(filters?: {
   return data
 }
 
+export async function getProductByBarcode(barcode: string): Promise<Product | null> {
+  const { data, error } = await supabase
+    .from('products')
+    .select('*, category:categories(*)')
+    .eq('barcode', barcode)
+    .eq('is_active', true)
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
 export async function getProduct(id: string): Promise<Product> {
   const { data, error } = await supabase
     .from('products')

@@ -6,9 +6,10 @@ import { Button } from '@/components/ui/button'
 import { Input, Select } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
 import { useToast } from '@/components/ui/toast'
-import { getProducts, getCategories, createProduct, updateProduct, deleteProduct } from '@/lib/api'
+import { getProducts, getCategories, createProduct, updateProduct, deleteProduct, getProductByBarcode } from '@/lib/api'
 import { formatCurrency } from '@/lib/helpers'
-import { Plus, Search, Edit2, Trash2, Package } from 'lucide-react'
+import { Plus, Search, Edit2, Trash2, Package, ScanBarcode } from 'lucide-react'
+import { BarcodeScanner } from '@/components/barcode-scanner'
 import type { Product, Category } from '@/types/database'
 
 const UNITS = [
@@ -54,6 +55,8 @@ export default function ProductosPage() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [form, setForm] = useState<ProductForm>(emptyForm)
   const [saving, setSaving] = useState(false)
+  const [showScanner, setShowScanner] = useState(false)
+  const [scanMode, setScanMode] = useState<'search' | 'form'>('search')
   const { toast } = useToast()
 
   const loadProducts = useCallback(async () => {
@@ -105,6 +108,31 @@ export default function ProductosPage() {
       notes: product.notes || '',
     })
     setModalOpen(true)
+  }
+
+  async function handleBarcodeScan(barcode: string) {
+    setShowScanner(false)
+    if (scanMode === 'form') {
+      setForm((prev) => ({ ...prev, barcode }))
+      toast(`Codigo escaneado: ${barcode}`)
+    } else {
+      // Search mode: find product by barcode
+      try {
+        const product = await getProductByBarcode(barcode)
+        if (product) {
+          openEdit(product)
+          toast(`Producto encontrado: ${product.name}`)
+        } else {
+          // Not found: open new product form with barcode pre-filled
+          setEditingProduct(null)
+          setForm({ ...emptyForm, barcode })
+          setModalOpen(true)
+          toast(`Codigo ${barcode} no encontrado. Carga el producto nuevo.`)
+        }
+      } catch {
+        toast('Error al buscar producto', 'error')
+      }
+    }
   }
 
   async function handleSave() {
@@ -170,10 +198,16 @@ export default function ProductosPage() {
           <h1 className="text-3xl font-bold text-gray-900">Productos</h1>
           <p className="text-lg text-gray-500">{products.length} productos activos</p>
         </div>
-        <Button size="lg" onClick={openNew}>
-          <Plus size={22} />
-          Nuevo Producto
-        </Button>
+        <div className="flex gap-3">
+          <Button size="lg" variant="secondary" onClick={() => { setScanMode('search'); setShowScanner(true) }}>
+            <ScanBarcode size={22} />
+            Escanear
+          </Button>
+          <Button size="lg" onClick={openNew}>
+            <Plus size={22} />
+            Nuevo Producto
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -344,12 +378,26 @@ export default function ProductosPage() {
             />
           </div>
 
-          <Input
-            label="Codigo de barras (opcional)"
-            placeholder="7790001234567"
-            value={form.barcode}
-            onChange={(e) => setForm({ ...form, barcode: e.target.value })}
-          />
+          <div>
+            <label className="block text-base font-medium text-gray-700 mb-2">Codigo de barras (opcional)</label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="7790001234567"
+                value={form.barcode}
+                onChange={(e) => setForm({ ...form, barcode: e.target.value })}
+                className="flex-1 px-4 py-3 text-lg rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={() => { setScanMode('form'); setShowScanner(true) }}
+                className="px-4 py-3 bg-blue-50 text-blue-600 rounded-xl border-2 border-blue-200 hover:bg-blue-100 transition-colors"
+                title="Escanear codigo"
+              >
+                <ScanBarcode size={24} />
+              </button>
+            </div>
+          </div>
 
           <Input
             label="Notas (opcional)"
@@ -378,6 +426,14 @@ export default function ProductosPage() {
           </div>
         </div>
       </Modal>
+
+      {/* Barcode Scanner */}
+      {showScanner && (
+        <BarcodeScanner
+          onScan={handleBarcodeScan}
+          onClose={() => setShowScanner(false)}
+        />
+      )}
     </div>
   )
 }
