@@ -276,3 +276,148 @@ export async function getDashboardStats() {
     lowStockProducts: lowStock.slice(0, 10),
   }
 }
+
+// ============ REPORTES ============
+
+export async function getSalesForPeriod(from: Date, to: Date): Promise<Sale[]> {
+  const { data, error } = await supabase
+    .from('sales')
+    .select('*, items:sale_items(*)')
+    .gte('created_at', from.toISOString())
+    .lte('created_at', to.toISOString())
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return data
+}
+
+export async function getTopProducts(from: Date, to: Date, limit = 10): Promise<{
+  product_name: string
+  total_quantity: number
+  total_revenue: number
+}[]> {
+  const { data, error } = await supabase
+    .from('sale_items')
+    .select('product_name, quantity, subtotal, created_at')
+    .gte('created_at', from.toISOString())
+    .lte('created_at', to.toISOString())
+
+  if (error) throw error
+
+  // Aggregate client-side
+  const map = new Map<string, { qty: number; rev: number }>()
+  for (const item of data || []) {
+    const existing = map.get(item.product_name) || { qty: 0, rev: 0 }
+    existing.qty += Number(item.quantity)
+    existing.rev += Number(item.subtotal)
+    map.set(item.product_name, existing)
+  }
+
+  return Array.from(map.entries())
+    .map(([name, { qty, rev }]) => ({
+      product_name: name,
+      total_quantity: qty,
+      total_revenue: rev,
+    }))
+    .sort((a, b) => b.total_revenue - a.total_revenue)
+    .slice(0, limit)
+}
+
+export async function getSalesByPaymentMethod(from: Date, to: Date): Promise<{
+  method: string
+  count: number
+  total: number
+}[]> {
+  const { data, error } = await supabase
+    .from('sales')
+    .select('payment_method, total')
+    .gte('created_at', from.toISOString())
+    .lte('created_at', to.toISOString())
+
+  if (error) throw error
+
+  const map = new Map<string, { count: number; total: number }>()
+  for (const sale of data || []) {
+    const existing = map.get(sale.payment_method) || { count: 0, total: 0 }
+    existing.count++
+    existing.total += Number(sale.total)
+    map.set(sale.payment_method, existing)
+  }
+
+  return Array.from(map.entries())
+    .map(([method, stats]) => ({ method, ...stats }))
+    .sort((a, b) => b.total - a.total)
+}
+
+export async function getDailySales(from: Date, to: Date): Promise<{
+  date: string
+  count: number
+  total: number
+}[]> {
+  const { data, error } = await supabase
+    .from('sales')
+    .select('created_at, total')
+    .gte('created_at', from.toISOString())
+    .lte('created_at', to.toISOString())
+    .order('created_at')
+
+  if (error) throw error
+
+  const map = new Map<string, { count: number; total: number }>()
+  for (const sale of data || []) {
+    const date = new Date(sale.created_at).toLocaleDateString('es-AR')
+    const existing = map.get(date) || { count: 0, total: 0 }
+    existing.count++
+    existing.total += Number(sale.total)
+    map.set(date, existing)
+  }
+
+  return Array.from(map.entries())
+    .map(([date, stats]) => ({ date, ...stats }))
+}
+
+// ============ ANULAR VENTA ============
+
+export async function voidSale(saleId: string): Promise<void> {
+  // Get sale items to restore stock
+  const { data: items, error: itemsErr } = await supabase
+    .from('sale_items')
+    .select('product_id, quantity')
+    .eq('sale_id', saleId)
+
+  if (itemsErr) throw itemsErr
+
+  // Restore stock for each item
+  for (const item of items || []) {
+    const { data: product, error: prodErr } = await supabase
+      .from('products')
+      .select('stock')
+      .eq('id', item.product_id)
+      .single()
+
+    if (prodErr) throw prodErr
+
+    const newStock = product.stock + Number(item.quantity)
+
+    await supabase
+      .from('products')
+      .update({ stock: newStock })
+      .eq('id', item.product_id)
+
+    await supabase
+      .from('stock_movements')
+      .insert({
+        product_id: item.product_id,
+        type: 'ajuste',
+        quantity: Number(item.quantity),
+        stock_before: product.stock,
+        stock_after: newStock,
+        notes: 'Anulacion de venta',
+        reference_id: saleId,
+      })
+  }
+
+  // Delete sale
+  await supabase.from('sale_items').delete().eq('sale_id', saleId)
+  await supabase.from('sales').delete().eq('id', saleId)
+}

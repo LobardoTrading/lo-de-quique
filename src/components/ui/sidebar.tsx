@@ -7,6 +7,7 @@ import {
   Package,
   ShoppingCart,
   TrendingUp,
+  BarChart3,
   Menu,
   X,
 } from 'lucide-react'
@@ -14,9 +15,10 @@ import { useState } from 'react'
 
 const navItems = [
   { href: '/', label: 'Inicio', icon: LayoutDashboard },
-  { href: '/productos', label: 'Productos', icon: Package },
   { href: '/ventas', label: 'Ventas', icon: ShoppingCart },
+  { href: '/productos', label: 'Productos', icon: Package },
   { href: '/stock', label: 'Stock', icon: TrendingUp },
+  { href: '/reportes', label: 'Reportes', icon: BarChart3 },
 ]
 
 export function Sidebar() {
